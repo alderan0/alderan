@@ -33,9 +33,7 @@ const LandingPage = () => {
                   Get Started <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                 </Link>
               </Button>
-              <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/20 rounded-full">
-                Learn More
-              </Button>
+              
             </div>
           </div>
           <div className="relative">
