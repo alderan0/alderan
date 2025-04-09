@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useTasks } from "@/context/TaskContext";
@@ -12,11 +13,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Mic, MicOff, Plus, Sparkles, Brain, Coffee, Zap, Moon } from "lucide-react";
+import { Mic, MicOff, Plus, Sparkles, Brain, Coffee, Zap, Moon, FolderKanban, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Card, CardContent } from "@/components/ui/card";
 
 export const AddTaskForm = () => {
-  const { addTask, currentMood } = useTasks();
+  const { addTask, currentMood, projects } = useTasks();
   const [taskName, setTaskName] = useState("");
   const [deadlineDate, setDeadlineDate] = useState("");
   const [deadlineTime, setDeadlineTime] = useState("");
@@ -25,6 +28,9 @@ export const AddTaskForm = () => {
   const [taskMood, setTaskMood] = useState(currentMood);
   const [isOpen, setIsOpen] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [transcription, setTranscription] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [selectedProjectId, setSelectedProjectId] = useState("");
   
   useEffect(() => {
     if (isOpen) {
@@ -50,7 +56,8 @@ export const AddTaskForm = () => {
       name: taskName,
       deadline,
       estimatedTime: totalMinutes || 30,
-      mood: taskMood as any
+      mood: taskMood as any,
+      projectId: selectedProjectId || undefined
     });
     
     setTaskName("");
@@ -58,6 +65,7 @@ export const AddTaskForm = () => {
     setDeadlineTime("");
     setEstimatedHours("");
     setEstimatedMinutes("");
+    setSelectedProjectId("");
     setIsOpen(false);
   };
   
@@ -68,6 +76,7 @@ export const AddTaskForm = () => {
     }
     
     setIsRecording(true);
+    setTranscription("");
     
     const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognitionAPI();
@@ -78,7 +87,7 @@ export const AddTaskForm = () => {
     
     recognition.onresult = (event) => {
       const speechResult = event.results[0][0].transcript;
-      processVoiceInput(speechResult);
+      setTranscription(speechResult);
       setIsRecording(false);
     };
     
@@ -99,10 +108,29 @@ export const AddTaskForm = () => {
     setIsRecording(false);
   };
   
+  const processTranscription = async () => {
+    if (!transcription) return;
+    
+    setIsProcessing(true);
+    
+    try {
+      // Simulate AI processing with a timeout
+      setTimeout(() => {
+        const processedInput = processVoiceInput(transcription);
+        setIsProcessing(false);
+        toast.success("Voice input processed!");
+      }, 1000);
+    } catch (error) {
+      setIsProcessing(false);
+      toast.error("Error processing voice input.");
+    }
+  };
+  
   const processVoiceInput = (input: string) => {
     let taskText = input;
     let deadline = "";
     let mood = "";
+    let projectName = "";
     
     const datePatterns = [
       { regex: /by\s(tomorrow)/i, handler: () => {
@@ -175,6 +203,23 @@ export const AddTaskForm = () => {
       }
     }
     
+    // Check for project reference
+    const projectPattern = /for\s+project\s+["']?([^"']+)["']?/i;
+    const projectMatch = input.match(projectPattern);
+    if (projectMatch) {
+      projectName = projectMatch[1].trim();
+      taskText = taskText.replace(projectPattern, '');
+      
+      // Find matching project
+      const matchingProject = projects.find(p => 
+        p.name.toLowerCase().includes(projectName.toLowerCase())
+      );
+      
+      if (matchingProject) {
+        setSelectedProjectId(matchingProject.id);
+      }
+    }
+    
     taskText = taskText.replace(/^(add|create|make)(\s+a)?(\s+task)?/i, '');
     taskText = taskText.trim().replace(/\.+$/, '');
     taskText = taskText.charAt(0).toUpperCase() + taskText.slice(1);
@@ -193,7 +238,12 @@ export const AddTaskForm = () => {
       setTaskMood(mood);
     }
     
-    toast.success("Voice input processed!");
+    return {
+      taskText,
+      deadline,
+      mood,
+      projectName
+    };
   };
   
   const today = new Date().toISOString().split('T')[0];
@@ -217,7 +267,7 @@ export const AddTaskForm = () => {
             <Plus size={24} />
           </Button>
         </DialogTrigger>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
               <span>Add New Task</span>
@@ -236,7 +286,40 @@ export const AddTaskForm = () => {
               </div>
             )}
           </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4 pt-4">
+          
+          {/* Transcription Box */}
+          {transcription && (
+            <Card className="mb-4 bg-muted/20 border border-primary/20">
+              <CardContent className="pt-4">
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-medium">Transcription</Label>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={processTranscription}
+                      disabled={isProcessing}
+                      className="h-8 px-2"
+                    >
+                      {isProcessing ? (
+                        <>
+                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        "Process"
+                      )}
+                    </Button>
+                  </div>
+                  <Alert variant="outline" className="bg-background">
+                    <AlertDescription className="text-sm">{transcription}</AlertDescription>
+                  </Alert>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="taskName">Task Name</Label>
               <Input
@@ -246,6 +329,32 @@ export const AddTaskForm = () => {
                 placeholder="What do you need to do?"
                 required
               />
+            </div>
+            
+            {/* Project Selector */}
+            <div className="space-y-2">
+              <Label htmlFor="project">Project (Optional)</Label>
+              <Select
+                value={selectedProjectId}
+                onValueChange={setSelectedProjectId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="No Project" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem value="">No Project</SelectItem>
+                    {projects.map(project => (
+                      <SelectItem key={project.id} value={project.id}>
+                        <div className="flex items-center">
+                          <FolderKanban className="h-4 w-4 mr-2 text-blue-500" />
+                          {project.name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
             </div>
             
             <div className="space-y-2">

@@ -35,16 +35,17 @@ const ProjectsPage = () => {
         />
       ) : (
         <>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-center sm:justify-between gap-4 mb-6">
             <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-blue-500">
               Projects
             </h1>
             <Button 
               onClick={() => setIsDialogOpen(true)}
-              className="bg-gradient-to-r from-purple-500 to-blue-500"
+              size="lg"
+              className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 w-full sm:w-auto shadow-md transition-all hover:shadow-lg"
             >
-              <PlusCircle className="mr-2 h-4 w-4" />
-              New Project
+              <PlusCircle className="mr-2 h-5 w-5" />
+              Create New Project
             </Button>
           </div>
           
@@ -52,7 +53,7 @@ const ProjectsPage = () => {
           <div className="space-y-2">
             <h2 className="text-xl font-semibold">Active Projects</h2>
             {activeProjects.length > 0 ? (
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-4 sm:grid-cols-2">
                 {activeProjects.map(project => (
                   <Card 
                     key={project.id} 
@@ -90,17 +91,25 @@ const ProjectsPage = () => {
                 ))}
               </div>
             ) : (
-              <div className="text-muted-foreground text-center py-8 bg-muted/50 rounded-lg">
-                <p>No active projects. Create a new project to get started.</p>
+              <div className="text-muted-foreground text-center py-12 bg-muted/50 rounded-lg">
+                <p className="mb-4">No active projects. Create a new project to get started.</p>
+                <Button 
+                  onClick={() => setIsDialogOpen(true)}
+                  size="lg"
+                  className="bg-gradient-to-r from-purple-500 to-blue-500"
+                >
+                  <PlusCircle className="mr-2 h-5 w-5" />
+                  Create New Project
+                </Button>
               </div>
             )}
           </div>
           
           {/* Completed projects */}
           {completedProjects.length > 0 && (
-            <div className="space-y-2">
+            <div className="space-y-4 mt-8">
               <h2 className="text-xl font-semibold">Completed Projects</h2>
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-4 sm:grid-cols-2">
                 {completedProjects.map(project => (
                   <Card 
                     key={project.id} 

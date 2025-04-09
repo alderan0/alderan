@@ -11,15 +11,17 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { AIScheduleRecommendations } from "@/components/tasks/AIScheduleRecommendations";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const TasksPage = () => {
   const { currentMood, projects } = useTasks();
+  const isMobile = useIsMobile();
   
   // Get active projects count
   const activeProjectsCount = projects.filter(p => !p.completed).length;
   
   return (
-    <div className="pb-20 space-y-6">
+    <div className="pb-24 space-y-6">
       <div className="grid gap-6 md:grid-cols-3">
         <Card className="col-span-3 md:col-span-2">
           <CardHeader className="pb-2">
@@ -44,11 +46,11 @@ const TasksPage = () => {
                 Productivity Insights
               </CardTitle>
               <Link to="/app/projects">
-                <Button variant="ghost" size="sm" className="h-8 gap-2 text-xs">
+                <Button variant="ghost" size="sm" className={`h-8 gap-2 ${isMobile ? 'text-xs p-2' : ''}`}>
                   <FolderKanban size={14} />
                   {activeProjectsCount > 0 ? (
                     <>
-                      {activeProjectsCount} Active Project{activeProjectsCount !== 1 ? 's' : ''}
+                      {isMobile ? 'Projects' : `${activeProjectsCount} Active Projects`}
                     </>
                   ) : (
                     <>Create Project</>
@@ -64,7 +66,7 @@ const TasksPage = () => {
       </div>
       
       <Tabs defaultValue="tasks" className="w-full">
-        <TabsList className="grid grid-cols-3 mb-4">
+        <TabsList className={`grid grid-cols-3 mb-4 ${isMobile ? 'sticky top-0 z-10 bg-background/95 backdrop-blur-sm' : ''}`}>
           <TabsTrigger value="tasks" className="flex items-center">
             <Code className="mr-2 h-4 w-4" />
             <span>Tasks</span>
@@ -79,7 +81,7 @@ const TasksPage = () => {
           </TabsTrigger>
         </TabsList>
         
-        <TabsContent value="tasks">
+        <TabsContent value="tasks" className={isMobile ? 'pb-20' : ''}>
           <TaskList />
         </TabsContent>
         
