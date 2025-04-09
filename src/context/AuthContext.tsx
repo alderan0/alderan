@@ -56,7 +56,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(demoUser);
         localStorage.setItem('user', JSON.stringify(demoUser));
         toast.success("Welcome back!");
-        navigate('/');
+        navigate('/app');
       } else {
         toast.error("Invalid credentials");
       }
@@ -80,8 +80,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       };
       setUser(newUser);
       localStorage.setItem('user', JSON.stringify(newUser));
-      toast.success("Account created successfully!");
-      navigate('/');
+      toast.success("Account created successfully! Welcome to Alderan 🌱");
+      navigate('/app');  // Updated to redirect to /app after signup
     } catch (error) {
       console.error("Signup error:", error);
       toast.error("Signup failed. Please try again.");
@@ -94,7 +94,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.removeItem('user');
     setUser(null);
     toast.info("You've been logged out");
-    navigate('/auth');
+    navigate('/');  // Updated to redirect to landing page after logout
   };
 
   return (

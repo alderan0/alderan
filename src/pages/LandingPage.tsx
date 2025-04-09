@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -14,7 +13,8 @@ import {
   TreePine,
   Medal,
   MessageSquare,
-  Mail
+  Mail,
+  Sparkles
 } from "lucide-react";
 import {
   Accordion,
@@ -23,14 +23,26 @@ import {
   AccordionTrigger
 } from "@/components/ui/accordion";
 import { Card, CardContent } from "@/components/ui/card";
+import { LandingNavbar } from "@/components/landing/LandingNavbar";
+import { useAuth } from "@/context/AuthContext";
 
 const LandingPage = () => {
+  const { isAuthenticated } = useAuth();
+  
   return (
     <div className="min-h-screen">
+      <LandingNavbar />
+      
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-alderan-green-dark to-alderan-green-light py-20 px-6 md:px-12 lg:px-24 text-white">
+      <section className="relative bg-gradient-to-br from-alderan-green-dark to-alderan-green-light pt-32 pb-20 px-6 md:px-12 lg:px-24 text-white">
         <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12 items-center">
           <div className="space-y-6">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-sm flex items-center gap-1">
+                <Sparkles size={14} className="text-yellow-300" />
+                Grow with every action
+              </span>
+            </div>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight animate-float">
               Grow Your Impact, One Task at a Time
             </h1>
@@ -38,12 +50,12 @@ const LandingPage = () => {
               Alderan turns your eco-friendly habits into a virtual tree that grows with every sustainable action you take.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
-              <Button size="lg" className="bg-white text-alderan-green-dark hover:bg-white/90">
-                <Link to="/auth" className="flex items-center gap-2">
-                  Get Started <ArrowRight size={18} />
+              <Button size="lg" className="bg-white text-alderan-green-dark hover:bg-white/90 rounded-full group transform transition-all hover:scale-105">
+                <Link to={isAuthenticated ? "/app" : "/auth"} className="flex items-center gap-2">
+                  Get Started <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                 </Link>
               </Button>
-              <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/20">
+              <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/20 rounded-full">
                 Learn More
               </Button>
             </div>
@@ -55,44 +67,52 @@ const LandingPage = () => {
             </div>
           </div>
         </div>
-        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-background to-transparent"></div>
+        <div className="absolute -bottom-5 left-0 right-0 h-16">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320" className="w-full h-full">
+            <path fill="#ffffff" fillOpacity="1" d="M0,96L48,112C96,128,192,160,288,154.7C384,149,480,107,576,90.7C672,75,768,85,864,112C960,139,1056,181,1152,186.7C1248,192,1344,160,1392,144L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+          </svg>
+        </div>
       </section>
 
       {/* Why The Need For Alderan - Problem Section */}
-      <section className="py-20 px-6 md:px-12 lg:px-24 bg-background">
+      <section id="about" className="py-20 px-6 md:px-12 lg:px-24 bg-background">
         <div className="max-w-6xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-16">Why We Need Alderan</h2>
+          <h2 className="text-3xl md:text-4xl font-bold text-center mb-6">Why We Need Alderan</h2>
+          <p className="text-center text-muted-foreground max-w-3xl mx-auto mb-16">
+            In our busy digital world, maintaining sustainable habits can be challenging without the right motivation and support.
+          </p>
+          
           <div className="grid md:grid-cols-3 gap-8">
-            <Card className="bg-gradient-to-br from-card to-muted/50 shadow-lg border-none">
+            <Card className="bg-gradient-to-br from-card to-muted/50 shadow-lg border-none overflow-hidden group hover:shadow-xl transition-all hover:-translate-y-1">
               <CardContent className="p-8 space-y-4">
-                <div className="h-14 w-14 rounded-full bg-alderan-green-light/20 flex items-center justify-center">
+                <div className="h-14 w-14 rounded-full bg-alderan-green-light/20 flex items-center justify-center group-hover:scale-110 transition-transform">
                   <Globe className="h-8 w-8 text-alderan-green-dark" />
                 </div>
-                <h3 className="text-xl font-semibold">Disconnection from Nature</h3>
+                <h3 className="text-xl font-semibold mb-2">Disconnection from Nature</h3>
                 <p className="text-muted-foreground">
                   In our digital world, we've lost our connection with the natural environment, making sustainable habits harder to maintain.
                 </p>
               </CardContent>
             </Card>
             
-            <Card className="bg-gradient-to-br from-card to-muted/50 shadow-lg border-none">
+            <Card className="bg-gradient-to-br from-card to-muted/50 shadow-lg border-none overflow-hidden group hover:shadow-xl transition-all hover:-translate-y-1">
               <CardContent className="p-8 space-y-4">
-                <div className="h-14 w-14 rounded-full bg-alderan-blue/20 flex items-center justify-center">
+                <div className="h-14 w-14 rounded-full bg-alderan-blue/20 flex items-center justify-center group-hover:scale-110 transition-transform">
                   <Heart className="h-8 w-8 text-alderan-blue" />
                 </div>
-                <h3 className="text-xl font-semibold">Low Motivation</h3>
+                <h3 className="text-xl font-semibold mb-2">Low Motivation</h3>
                 <p className="text-muted-foreground">
                   Without immediate rewards, staying committed to environmentally friendly habits becomes challenging over time.
                 </p>
               </CardContent>
             </Card>
             
-            <Card className="bg-gradient-to-br from-card to-muted/50 shadow-lg border-none">
+            <Card className="bg-gradient-to-br from-card to-muted/50 shadow-lg border-none overflow-hidden group hover:shadow-xl transition-all hover:-translate-y-1">
               <CardContent className="p-8 space-y-4">
-                <div className="h-14 w-14 rounded-full bg-alderan-leaf/20 flex items-center justify-center">
+                <div className="h-14 w-14 rounded-full bg-alderan-leaf/20 flex items-center justify-center group-hover:scale-110 transition-transform">
                   <Users className="h-8 w-8 text-alderan-leaf" />
                 </div>
-                <h3 className="text-xl font-semibold">Lack of Community</h3>
+                <h3 className="text-xl font-semibold mb-2">Lack of Community</h3>
                 <p className="text-muted-foreground">
                   Individual efforts often feel insignificant without a supportive community to share and celebrate environmental achievements.
                 </p>
