@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useTasks } from "@/context/TaskContext";
@@ -16,42 +15,6 @@ import {
 import { Mic, MicOff, Plus, Sparkles, Brain, Coffee, Zap, Moon } from "lucide-react";
 import { toast } from "sonner";
 
-// Add proper TypeScript declarations for the speech recognition API
-interface SpeechRecognitionEvent extends Event {
-  results: {
-    [index: number]: {
-      [index: number]: {
-        transcript: string;
-      };
-    };
-  };
-  resultIndex: number;
-}
-
-interface SpeechRecognition extends EventTarget {
-  lang: string;
-  interimResults: boolean;
-  maxAlternatives: number;
-  continuous: boolean;
-  start: () => void;
-  stop: () => void;
-  onresult: (event: SpeechRecognitionEvent) => void;
-  onerror: (event: any) => void;
-  onend: () => void;
-}
-
-// Fix TypeScript declarations for the global window object
-declare global {
-  interface Window { 
-    SpeechRecognition: {
-      new (): SpeechRecognition;
-    };
-    webkitSpeechRecognition: {
-      new (): SpeechRecognition;
-    };
-  }
-}
-
 export const AddTaskForm = () => {
   const { addTask, currentMood } = useTasks();
   const [taskName, setTaskName] = useState("");
@@ -63,7 +26,6 @@ export const AddTaskForm = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   
-  // Effect to set the current mood as default when the form opens
   useEffect(() => {
     if (isOpen) {
       setTaskMood(currentMood);
@@ -77,11 +39,9 @@ export const AddTaskForm = () => {
       return;
     }
     
-    // Combine date and time for deadline
     const dateString = `${deadlineDate}${deadlineTime ? 'T' + deadlineTime : 'T23:59'}`;
     const deadline = new Date(dateString);
     
-    // Calculate total minutes
     const hours = parseInt(estimatedHours) || 0;
     const minutes = parseInt(estimatedMinutes) || 0;
     const totalMinutes = (hours * 60) + minutes;
@@ -89,11 +49,10 @@ export const AddTaskForm = () => {
     addTask({
       name: taskName,
       deadline,
-      estimatedTime: totalMinutes || 30, // Default to 30 minutes if not specified
+      estimatedTime: totalMinutes || 30,
       mood: taskMood as any
     });
     
-    // Reset form
     setTaskName("");
     setDeadlineDate("");
     setDeadlineTime("");
@@ -102,7 +61,6 @@ export const AddTaskForm = () => {
     setIsOpen(false);
   };
   
-  // Voice input handling
   const startVoiceRecognition = () => {
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
       toast.error("Your browser doesn't support speech recognition.");
@@ -111,7 +69,6 @@ export const AddTaskForm = () => {
     
     setIsRecording(true);
     
-    // Use the Web Speech API with proper TypeScript handling
     const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognitionAPI();
     
@@ -119,13 +76,13 @@ export const AddTaskForm = () => {
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
     
-    recognition.onresult = (event: SpeechRecognitionEvent) => {
+    recognition.onresult = (event) => {
       const speechResult = event.results[0][0].transcript;
       processVoiceInput(speechResult);
       setIsRecording(false);
     };
     
-    recognition.onerror = (event: any) => {
+    recognition.onerror = (event) => {
       console.error('Speech recognition error', event.error);
       toast.error("Couldn't understand. Please try again.");
       setIsRecording(false);
@@ -142,13 +99,11 @@ export const AddTaskForm = () => {
     setIsRecording(false);
   };
   
-  // Process the voice input using simple pattern matching
   const processVoiceInput = (input: string) => {
     let taskText = input;
     let deadline = "";
     let mood = "";
     
-    // Extract deadline with various patterns
     const datePatterns = [
       { regex: /by\s(tomorrow)/i, handler: () => {
         const tomorrow = new Date();
@@ -167,7 +122,7 @@ export const AddTaskForm = () => {
                           match.toLowerCase().includes('saturday') ? days.saturday : days.sunday);
         
         let daysToAdd = (7 - dayOfWeek + targetDay) % 7;
-        if (daysToAdd === 0) daysToAdd = 7; // Next week, not today
+        if (daysToAdd === 0) daysToAdd = 7;
         
         const targetDate = new Date();
         targetDate.setDate(today.getDate() + daysToAdd);
@@ -195,7 +150,6 @@ export const AddTaskForm = () => {
       }}
     ];
     
-    // Try to extract the date
     for (const pattern of datePatterns) {
       const match = input.match(pattern.regex);
       if (match) {
@@ -205,7 +159,6 @@ export const AddTaskForm = () => {
       }
     }
     
-    // Extract mood
     const moodPatterns = [
       { regex: /(when|while|if)\s+i('m|'m|\s+am)?\s+(creative)/i, mood: "Creative" },
       { regex: /(when|while|if)\s+i('m|'m|\s+am)?\s+(focused)/i, mood: "Focused" },
@@ -222,18 +175,15 @@ export const AddTaskForm = () => {
       }
     }
     
-    // Clean up task text
     taskText = taskText.replace(/^(add|create|make)(\s+a)?(\s+task)?/i, '');
     taskText = taskText.trim().replace(/\.+$/, '');
     taskText = taskText.charAt(0).toUpperCase() + taskText.slice(1);
     
-    // Set form values
     setTaskName(taskText);
     
     if (deadline) {
       setDeadlineDate(deadline);
     } else {
-      // Default to tomorrow if no date specified
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
       setDeadlineDate(tomorrow.toISOString().split('T')[0]);
@@ -243,11 +193,9 @@ export const AddTaskForm = () => {
       setTaskMood(mood);
     }
     
-    // Provide feedback
     toast.success("Voice input processed!");
   };
   
-  // Get today's date in YYYY-MM-DD format for min attribute
   const today = new Date().toISOString().split('T')[0];
   
   const getMoodIcon = (mood: string) => {
@@ -263,7 +211,6 @@ export const AddTaskForm = () => {
   
   return (
     <>
-      {/* Main "Add Task" button */}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogTrigger asChild>
           <Button className="fixed bottom-20 right-4 rounded-full h-14 w-14 shadow-lg">
@@ -403,7 +350,6 @@ export const AddTaskForm = () => {
         </DialogContent>
       </Dialog>
       
-      {/* Floating voice button */}
       <Button 
         variant="outline"
         className="fixed bottom-20 left-4 rounded-full h-14 w-14 shadow-lg bg-white"
