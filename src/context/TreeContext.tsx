@@ -1,3 +1,4 @@
+
 import { createContext, useState, useContext, useEffect, ReactNode } from "react";
 import { Tool } from "./TaskContext";
 import { toast } from "sonner";
@@ -27,6 +28,7 @@ interface TreeContextType {
   applyTool: (tool: Tool) => void;
   resetTree: () => void;
   getCurrentLevel: () => number;
+  getTreeTier: () => "sapling" | "young" | "mature"; // Added this function
   treeHistory: TreeState[];
   galleryIndex: number;
   viewPastTree: (index: number) => void;
@@ -308,6 +310,13 @@ export const TreeProvider = ({ children }: { children: ReactNode }) => {
     return tree.level;
   };
   
+  // Add getTreeTier function to determine tree tier based on task count
+  const getTreeTier = (): "sapling" | "young" | "mature" => {
+    if (tree.tasksCompleted >= 150) return "mature";
+    if (tree.tasksCompleted >= 50) return "young";
+    return "sapling";
+  };
+  
   const viewPastTree = (index: number) => {
     if (index >= 0 && index < treeHistory.length) {
       setGalleryIndex(index);
@@ -320,10 +329,11 @@ export const TreeProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <TreeContext.Provider value={{ 
-      tree: galleryIndex >= 0 ? treeHistory[galleryIndex] : tree,
+      tree, 
       applyTool, 
       resetTree,
       getCurrentLevel,
+      getTreeTier, // Add this function to the context
       treeHistory,
       galleryIndex,
       viewPastTree,

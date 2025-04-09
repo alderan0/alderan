@@ -9,7 +9,7 @@ import { useState } from "react";
 import { format } from "date-fns";
 
 export const VirtualTree = () => {
-  const { tree, treeHistory, galleryIndex, viewPastTree, viewLatestTree } = useTree();
+  const { tree, treeHistory, galleryIndex, viewPastTree, viewLatestTree, getTreeTier } = useTree();
   const [activeTab, setActiveTab] = useState("tree");
   
   // Calculate sizes and colors based on tree state
@@ -118,6 +118,9 @@ export const VirtualTree = () => {
     );
   };
   
+  // Get the current tier based on tree level
+  const currentTier = getTreeTier();
+  
   return (
     <div className="flex flex-col items-center justify-center py-8">
       <div className="mb-4 w-full max-w-md">
@@ -133,14 +136,14 @@ export const VirtualTree = () => {
                 Level {tree.level}
               </Badge>
               <Badge variant="outline" className="bg-amber-100 text-amber-700 font-semibold px-3 py-1">
-                {tree.tier.charAt(0).toUpperCase() + tree.tier.slice(1)} Tier
+                {currentTier.charAt(0).toUpperCase() + currentTier.slice(1)} Tier
               </Badge>
               {tree.level >= 5 && (
                 <Badge variant="outline" className="bg-purple-100 text-purple-700 font-semibold px-3 py-1">
                   Thriving
                 </Badge>
               )}
-              {tree.tier === "mature" && (
+              {currentTier === "mature" && (
                 <Badge variant="outline" className="bg-blue-100 text-blue-700 font-semibold px-3 py-1">
                   Master Coder
                 </Badge>
@@ -448,7 +451,7 @@ export const VirtualTree = () => {
       </div>
       
       {/* Achievement badges */}
-      {(tree.height > 40 || tree.leaves > 40 || tree.tier !== "sapling") && (
+      {(tree.height > 40 || tree.leaves > 40 || currentTier !== "sapling") && (
         <motion.div 
           className="mt-8 grid grid-cols-3 gap-3 max-w-xs"
           initial={{ opacity: 0 }}
@@ -471,7 +474,7 @@ export const VirtualTree = () => {
               <span className="text-xs text-muted-foreground">Leafy</span>
             </div>
           )}
-          {tree.tier === "mature" && (
+          {currentTier === "mature" && (
             <div className="flex flex-col items-center">
               <div className="bg-purple-100 w-12 h-12 rounded-full flex items-center justify-center text-purple-600 text-xl mb-1">
                 👨‍💻

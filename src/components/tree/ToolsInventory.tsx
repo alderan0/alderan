@@ -70,11 +70,15 @@ export const ToolsInventory = () => {
   
   // Get available tools based on tree tier
   const getEligibleTools = () => {
+    // For tools with tier property, we'll assume they're in level ranges
+    // sapling: levels 1-5
+    // young: levels 6-10
+    // mature: levels 11+
     if (currentTier === "sapling") {
-      return unusedTools.filter(tool => tool.tier === "sapling");
+      return unusedTools.filter(tool => !tool.minLevel || tool.minLevel <= 5);
     }
     if (currentTier === "young") {
-      return unusedTools.filter(tool => tool.tier === "sapling" || tool.tier === "young");
+      return unusedTools.filter(tool => !tool.minLevel || tool.minLevel <= 10);
     }
     // Mature tier has access to all tools
     return unusedTools;
@@ -85,6 +89,14 @@ export const ToolsInventory = () => {
 
   const handleUseTool = (tool: any) => {
     applyTool(tool);
+  };
+  
+  const getTierLabel = (minLevel?: number) => {
+    if (!minLevel) return "Beginner";
+    if (minLevel <= 5) return "Beginner";
+    if (minLevel <= 10) return "Intermediate";
+    if (minLevel <= 15) return "Advanced";
+    return "Expert";
   };
 
   return (
@@ -121,7 +133,7 @@ export const ToolsInventory = () => {
                   <div className="flex items-center gap-2">
                     <p className="font-medium text-sm">{tool.name}</p>
                     <Badge variant="outline" className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5">
-                      {tool.tier}
+                      {getTierLabel(tool.minLevel)}
                     </Badge>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">{tool.description}</p>
@@ -158,7 +170,7 @@ export const ToolsInventory = () => {
           {/* Locked tools section */}
           {lockedTools.length > 0 && (
             <div className="mt-6">
-              <h3 className="text-sm font-medium text-muted-foreground mb-2">Locked Tools (Tier Restricted)</h3>
+              <h3 className="text-sm font-medium text-muted-foreground mb-2">Locked Tools (Level Restricted)</h3>
               {lockedTools.map(tool => (
                 <motion.div 
                   key={tool.id} 
@@ -173,10 +185,10 @@ export const ToolsInventory = () => {
                       <div className="flex items-center gap-2">
                         <p className="font-medium text-sm text-muted-foreground">{tool.name}</p>
                         <Badge variant="outline" className="text-xs bg-amber-100 text-amber-800 px-2 py-0.5">
-                          {tool.tier} tier
+                          {getTierLabel(tool.minLevel)} level
                         </Badge>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-1">Unlocks at {tool.tier} tier</p>
+                      <p className="text-xs text-muted-foreground mt-1">Unlocks at higher level</p>
                     </div>
                   </div>
                   <Button 

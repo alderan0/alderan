@@ -58,8 +58,10 @@ export interface Habit {
 export interface Tool {
   id: string;
   name: string;
-  type: "water" | "fertilize" | "prune" | "decorate" | "illuminate" | "enhance" | "customize";
+  type: string;
+  minLevel?: number; // Instead of tier, we'll use minLevel to align with the level system
   description: string;
+  used: boolean;
   effect: {
     height?: number;
     leaves?: number;
@@ -67,8 +69,6 @@ export interface Tool {
     beauty?: number;
     style?: string;
   };
-  used: boolean;
-  level: number; // Changed from tier to level (1-20)
 }
 
 interface TaskContextType {
@@ -102,105 +102,105 @@ const toolsDatabase = [
     type: "customize" as const,
     description: "Recolors leaves in code syntax themes",
     effect: { beauty: 8, style: "syntax" },
-    level: 1
+    minLevel: 1
   },
   {
     name: "Debugging Fertilizer",
     type: "fertilize" as const,
     description: "Speeds up tree growth by fixing bugs",
     effect: { height: 10, health: 8 },
-    level: 2
+    minLevel: 2
   },
   {
     name: "Pixel Pruner",
     type: "prune" as const,
     description: "Shapes tree into pixel art",
     effect: { beauty: 12, style: "pixel" },
-    level: 4
+    minLevel: 4
   },
   {
     name: "Lo-Fi Watering Can",
     type: "water" as const,
     description: "Adds a lo-fi aesthetic with muted tones",
     effect: { height: 6, health: 4, style: "lofi" },
-    level: 3
+    minLevel: 3
   },
   {
     name: "Night Mode Lantern",
     type: "illuminate" as const,
     description: "Illuminates tree with a dark-mode vibe",
     effect: { beauty: 15, style: "nightmode" },
-    level: 12
+    minLevel: 12
   },
   {
     name: "Code Comment Bird",
     type: "decorate" as const,
     description: "Adds birds displaying random code comments",
     effect: { beauty: 10, style: "birds" },
-    level: 6
+    minLevel: 6
   },
   {
     name: "Binary Bark Engraver",
     type: "customize" as const,
     description: "Carves binary patterns into bark",
     effect: { beauty: 8, style: "binary" },
-    level: 8
+    minLevel: 8
   },
   {
     name: "Function Flower Pot",
     type: "enhance" as const,
     description: "Grows function-shaped flowers around your tree",
     effect: { beauty: 18, leaves: 8, style: "functions" },
-    level: 15
+    minLevel: 15
   },
   {
     name: "Looping Lights",
     type: "illuminate" as const,
     description: "Adds animated light loops using recursion",
     effect: { beauty: 14, style: "loops" },
-    level: 10
+    minLevel: 10
   },
   {
     name: "Recursive Roots",
     type: "enhance" as const,
     description: "Extends roots in beautiful recursive patterns",
     effect: { health: 12, beauty: 10, style: "recursive" },
-    level: 18
+    minLevel: 18
   },
   {
     name: "Algorithm Animator",
     type: "enhance" as const,
     description: "Visualizes sorting algorithms with branch movements",
     effect: { beauty: 20, health: 5, style: "algorithm" },
-    level: 14
+    minLevel: 14
   },
   {
     name: "Data Structure Decorator",
     type: "decorate" as const,
     description: "Adds visual representations of data structures to your tree",
     effect: { beauty: 15, leaves: 10, style: "datastructure" },
-    level: 16
+    minLevel: 16
   },
   {
     name: "API Connector",
     type: "customize" as const,
     description: "Connects your tree to external resources with animated tendrils",
     effect: { height: 12, beauty: 12, style: "api" },
-    level: 9
+    minLevel: 9
   },
   {
     name: "Query Optimizer",
     type: "enhance" as const,
     description: "Optimizes tree performance with subtle glowing patterns",
     effect: { health: 15, beauty: 8, style: "query" },
-    level: 11
+    minLevel: 11
   },
   {
     name: "Quantum Quantum",
     type: "illuminate" as const,
     description: "Adds quantum computing-inspired light effects",
     effect: { beauty: 25, style: "quantum" },
-    level: 20
+    minLevel: 20
   }
 ];
 
@@ -610,7 +610,7 @@ export const TaskProvider = ({ children }: { children: ReactNode }) => {
     const maxToolLevel = Math.min(20, currentLevel + difficultyBonus);
     
     const eligibleTools = toolsDatabase.filter(tool => 
-      tool.level <= maxToolLevel
+      tool.minLevel <= maxToolLevel
     );
     
     if (eligibleTools.length > 0) {
