@@ -1,13 +1,26 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+
+import { Layout } from "@/components/layout/Layout";
+import { Routes, Route, Navigate } from "react-router-dom";
+import TasksPage from "./TasksPage";
+import TreePage from "./TreePage";
+import CommunityPage from "./CommunityPage";
+import { TaskProvider } from "@/context/TaskContext";
+import { TreeProvider } from "@/context/TreeContext";
 
 const Index = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">Start building your amazing project here!</p>
-      </div>
-    </div>
+    <TaskProvider>
+      <TreeProvider>
+        <Routes>
+          <Route path="/" element={<Layout />}>
+            <Route index element={<TasksPage />} />
+            <Route path="tree" element={<TreePage />} />
+            <Route path="community" element={<CommunityPage />} />
+            <Route path="*" element={<Navigate to="/" />} />
+          </Route>
+        </Routes>
+      </TreeProvider>
+    </TaskProvider>
   );
 };
 
