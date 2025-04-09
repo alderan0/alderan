@@ -1,6 +1,6 @@
 
 import { Link, useLocation } from "react-router-dom";
-import { Calendar, Users, Sparkles } from "lucide-react";
+import { Calendar, Users, Sparkles, FolderKanban } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const BottomNav = () => {
@@ -12,7 +12,7 @@ export const BottomNav = () => {
         <Link 
           to="/app" 
           className={cn(
-            "flex flex-col items-center justify-center w-1/3 h-full relative transition-all duration-300",
+            "flex flex-col items-center justify-center w-1/4 h-full relative transition-all duration-300",
             location.pathname === '/app' 
               ? "text-primary scale-110" 
               : "text-muted-foreground hover:text-primary/80"
@@ -29,11 +29,32 @@ export const BottomNav = () => {
           )} />
           <span className="text-xs mt-1 font-medium">Tasks</span>
         </Link>
+
+        <Link 
+          to="/app/projects" 
+          className={cn(
+            "flex flex-col items-center justify-center w-1/4 h-full relative transition-all duration-300",
+            location.pathname === '/app/projects' 
+              ? "text-amber-500 scale-110" 
+              : "text-muted-foreground hover:text-amber-500/80"
+          )}
+        >
+          {location.pathname === '/app/projects' && (
+            <span className="absolute -top-1 right-1/4">
+              <Sparkles size={12} className="text-yellow-400 animate-pulse" />
+            </span>
+          )}
+          <FolderKanban size={24} className={cn(
+            "transition-transform",
+            location.pathname === '/app/projects' && "animate-bounce-slow"
+          )} />
+          <span className="text-xs mt-1 font-medium">Projects</span>
+        </Link>
         
         <Link 
           to="/app/tree" 
           className={cn(
-            "flex flex-col items-center justify-center w-1/3 h-full relative transition-all duration-300",
+            "flex flex-col items-center justify-center w-1/4 h-full relative transition-all duration-300",
             location.pathname === '/app/tree' 
               ? "text-alderan-green-light scale-110" 
               : "text-muted-foreground hover:text-alderan-green-light/80"
@@ -54,7 +75,7 @@ export const BottomNav = () => {
         <Link 
           to="/app/community" 
           className={cn(
-            "flex flex-col items-center justify-center w-1/3 h-full relative transition-all duration-300",
+            "flex flex-col items-center justify-center w-1/4 h-full relative transition-all duration-300",
             location.pathname === '/app/community' 
               ? "text-alderan-blue scale-110" 
               : "text-muted-foreground hover:text-alderan-blue/80"

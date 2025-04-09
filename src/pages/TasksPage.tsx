@@ -5,13 +5,18 @@ import { AddTaskForm } from "@/components/tasks/AddTaskForm";
 import { MoodSelector } from "@/components/tasks/MoodSelector";
 import { HabitTracker } from "@/components/tasks/HabitTracker";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, Code, LineChart } from "lucide-react";
+import { Calendar, Code, LineChart, FolderKanban } from "lucide-react";
 import { useTasks } from "@/context/TaskContext";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { AIScheduleRecommendations } from "@/components/tasks/AIScheduleRecommendations";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
 
 const TasksPage = () => {
-  const { currentMood } = useTasks();
+  const { currentMood, projects } = useTasks();
+  
+  // Get active projects count
+  const activeProjectsCount = projects.filter(p => !p.completed).length;
   
   return (
     <div className="pb-20 space-y-6">
@@ -33,10 +38,24 @@ const TasksPage = () => {
         
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="flex items-center text-lg">
-              <Calendar className="mr-2 h-5 w-5 text-purple-500" />
-              Productivity Insights
-            </CardTitle>
+            <div className="flex justify-between items-center">
+              <CardTitle className="flex items-center text-lg">
+                <Calendar className="mr-2 h-5 w-5 text-purple-500" />
+                Productivity Insights
+              </CardTitle>
+              <Link to="/app/projects">
+                <Button variant="ghost" size="sm" className="h-8 gap-2 text-xs">
+                  <FolderKanban size={14} />
+                  {activeProjectsCount > 0 ? (
+                    <>
+                      {activeProjectsCount} Active Project{activeProjectsCount !== 1 ? 's' : ''}
+                    </>
+                  ) : (
+                    <>Create Project</>
+                  )}
+                </Button>
+              </Link>
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <HabitTracker />

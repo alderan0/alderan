@@ -1,6 +1,13 @@
 import { createContext, useState, useContext, useEffect, ReactNode } from "react";
 import { toast } from "sonner";
 
+export interface Subtask {
+  id: string;
+  name: string;
+  completed: boolean;
+  completedAt?: Date;
+}
+
 export interface Task {
   id: string;
   name: string;
@@ -11,6 +18,28 @@ export interface Task {
   completedAt?: Date;
   actualTime?: number; // In minutes
   mood?: "Creative" | "Focused" | "Relaxed" | "Energetic" | "Tired"; // Added mood property
+  projectId?: string; // Reference to parent project
+  subtasks: Subtask[]; // Added subtasks
+  notes?: string;
+}
+
+export interface Project {
+  id: string;
+  name: string;
+  description?: string;
+  deadline?: Date;
+  completed: boolean;
+  completedAt?: Date;
+  createdAt: Date;
+}
+
+export interface ProjectResource {
+  id: string;
+  name: string;
+  type: "app" | "resource";
+  description: string;
+  url: string;
+  iconName: string; // Name of the Lucide icon to use
 }
 
 export interface Habit {
@@ -41,7 +70,7 @@ export interface Tool {
 
 interface TaskContextType {
   tasks: Task[];
-  addTask: (task: Omit<Task, "id" | "priority" | "completed">) => void;
+  addTask: (task: Omit<Task, "id" | "priority" | "completed" | "subtasks">) => void;
   completeTask: (id: string, actualTime: number) => void;
   deleteTask: (id: string) => void;
   prioritizeTasks: () => void;
@@ -51,6 +80,14 @@ interface TaskContextType {
   currentMood: string;
   setCurrentMood: (mood: string) => void;
   suggestHabit: () => void;
+  projects: Project[];
+  addProject: (project: Omit<Project, "id" | "completed" | "completedAt" | "createdAt">) => void;
+  completeProject: (id: string) => void;
+  deleteProject: (id: string) => void;
+  addSubtask: (taskId: string, subtaskName: string) => void;
+  completeSubtask: (taskId: string, subtaskId: string) => void;
+  deleteSubtask: (taskId: string, subtaskId: string) => void;
+  getProjectResources: (projectId: string) => ProjectResource[];
 }
 
 const TaskContext = createContext<TaskContextType | undefined>(undefined);
@@ -129,8 +166,92 @@ const toolsDatabase = [
   },
 ];
 
+// Database of resources and apps to suggest
+const resourcesDatabase: ProjectResource[] = [
+  {
+    id: "1",
+    name: "VS Code",
+    type: "app",
+    description: "Powerful code editor for all languages",
+    url: "https://code.visualstudio.com/",
+    iconName: "code",
+  },
+  {
+    id: "2",
+    name: "Figma",
+    type: "app",
+    description: "Design and prototype UI/UX",
+    url: "https://www.figma.com/",
+    iconName: "palette",
+  },
+  {
+    id: "3",
+    name: "GitHub",
+    type: "app",
+    description: "Version control and collaboration",
+    url: "https://github.com/",
+    iconName: "git-branch",
+  },
+  {
+    id: "4",
+    name: "Postman",
+    type: "app",
+    description: "API testing and documentation",
+    url: "https://www.postman.com/",
+    iconName: "server",
+  },
+  {
+    id: "5",
+    name: "MDN Web Docs",
+    type: "resource",
+    description: "Comprehensive web development documentation",
+    url: "https://developer.mozilla.org/",
+    iconName: "file-text",
+  },
+  {
+    id: "6",
+    name: "Stack Overflow",
+    type: "resource",
+    description: "Community Q&A for programmers",
+    url: "https://stackoverflow.com/",
+    iconName: "help-circle",
+  },
+  {
+    id: "7",
+    name: "Frontend Masters",
+    type: "resource",
+    description: "In-depth web development courses",
+    url: "https://frontendmasters.com/",
+    iconName: "graduation-cap",
+  },
+  {
+    id: "8",
+    name: "Dribbble",
+    type: "resource",
+    description: "Design inspiration and resources",
+    url: "https://dribbble.com/",
+    iconName: "droplets",
+  },
+  {
+    id: "9",
+    name: "DevDocs",
+    type: "resource",
+    description: "Fast API documentation browser",
+    url: "https://devdocs.io/",
+    iconName: "book-open",
+  },
+  {
+    id: "10",
+    name: "Notion",
+    type: "app",
+    description: "All-in-one workspace for notes and tasks",
+    url: "https://www.notion.so/",
+    iconName: "layers",
+  },
+];
+
 // Enhanced AI prioritization function with mood weighting
-const calculatePriority = (task: Omit<Task, "id" | "priority" | "completed">, tasks: Task[], currentMood: string): number => {
+const calculatePriority = (task: Omit<Task, "id" | "priority" | "completed" | "subtasks">, tasks: Task[], currentMood: string): number => {
   const now = new Date();
   const deadlineDate = new Date(task.deadline);
   
@@ -249,6 +370,64 @@ const detectHabitPattern = (tasks: Task[]): Habit | null => {
   };
 };
 
+// New function to suggest resources based on project and task names
+const suggestResources = (projectName: string, taskNames: string[]): ProjectResource[] => {
+  // Convert everything to lowercase for easier matching
+  const projectLower = projectName.toLowerCase();
+  const taskLower = taskNames.map(t => t.toLowerCase());
+  
+  const suggestions: ProjectResource[] = [];
+  const allKeywords = [projectLower, ...taskLower].join(" ");
+  
+  // Define keyword sets for matching
+  const webDevKeywords = ["web", "website", "frontend", "html", "css", "javascript", "js", "react", "vue", "angular"];
+  const designKeywords = ["design", "ui", "ux", "mockup", "wireframe", "figma", "sketch", "prototype"];
+  const backendKeywords = ["backend", "api", "server", "database", "db", "node", "express", "django", "flask", "sql"];
+  const mobileKeywords = ["mobile", "app", "ios", "android", "react native", "flutter", "swift", "kotlin"];
+  const devopsKeywords = ["devops", "deployment", "ci/cd", "docker", "kubernetes", "aws", "cloud"];
+  
+  // Check which categories match the project/tasks
+  const hasWebDev = webDevKeywords.some(kw => allKeywords.includes(kw));
+  const hasDesign = designKeywords.some(kw => allKeywords.includes(kw));
+  const hasBackend = backendKeywords.some(kw => allKeywords.includes(kw));
+  const hasMobile = mobileKeywords.some(kw => allKeywords.includes(kw));
+  const hasDevOps = devopsKeywords.some(kw => allKeywords.includes(kw));
+  
+  // Suggest VS Code for almost any coding project
+  if (hasWebDev || hasBackend || hasMobile || hasDevOps) {
+    suggestions.push(resourcesDatabase.find(r => r.name === "VS Code")!);
+  }
+  
+  // For design-related tasks
+  if (hasDesign) {
+    suggestions.push(resourcesDatabase.find(r => r.name === "Figma")!);
+    suggestions.push(resourcesDatabase.find(r => r.name === "Dribbble")!);
+  }
+  
+  // For web development
+  if (hasWebDev) {
+    suggestions.push(resourcesDatabase.find(r => r.name === "MDN Web Docs")!);
+    suggestions.push(resourcesDatabase.find(r => r.name === "Frontend Masters")!);
+  }
+  
+  // For backend development
+  if (hasBackend) {
+    suggestions.push(resourcesDatabase.find(r => r.name === "Postman")!);
+    suggestions.push(resourcesDatabase.find(r => r.name === "DevDocs")!);
+  }
+  
+  // For any project, suggest GitHub and Stack Overflow
+  suggestions.push(resourcesDatabase.find(r => r.name === "GitHub")!);
+  suggestions.push(resourcesDatabase.find(r => r.name === "Stack Overflow")!);
+  
+  // For project management
+  suggestions.push(resourcesDatabase.find(r => r.name === "Notion")!);
+  
+  // Deduplicate and limit to 5 suggestions
+  const uniqueSuggestions = Array.from(new Set(suggestions));
+  return uniqueSuggestions.slice(0, 5);
+};
+
 export const TaskProvider = ({ children }: { children: ReactNode }) => {
   const [tasks, setTasks] = useState<Task[]>(() => {
     const saved = localStorage.getItem('tasks');
@@ -257,7 +436,25 @@ export const TaskProvider = ({ children }: { children: ReactNode }) => {
         return JSON.parse(saved).map((task: any) => ({
           ...task,
           deadline: new Date(task.deadline),
-          completedAt: task.completedAt ? new Date(task.completedAt) : undefined
+          completedAt: task.completedAt ? new Date(task.completedAt) : undefined,
+          subtasks: task.subtasks || [] // Ensure subtasks array exists
+        }));
+      } catch (e) {
+        return [];
+      }
+    }
+    return [];
+  });
+  
+  const [projects, setProjects] = useState<Project[]>(() => {
+    const saved = localStorage.getItem('projects');
+    if (saved) {
+      try {
+        return JSON.parse(saved).map((project: any) => ({
+          ...project,
+          deadline: project.deadline ? new Date(project.deadline) : undefined,
+          completedAt: project.completedAt ? new Date(project.completedAt) : undefined,
+          createdAt: new Date(project.createdAt)
         }));
       } catch (e) {
         return [];
@@ -303,6 +500,7 @@ export const TaskProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     localStorage.setItem('tasks', JSON.stringify(tasks));
+    localStorage.setItem('projects', JSON.stringify(projects));
     localStorage.setItem('tools', JSON.stringify(tools));
     localStorage.setItem('habits', JSON.stringify(habits));
     localStorage.setItem('currentMood', currentMood);
@@ -342,15 +540,16 @@ export const TaskProvider = ({ children }: { children: ReactNode }) => {
         return habit;
       })
     );
-  }, [tasks, tools, habits, currentMood]);
+  }, [tasks, projects, tools, habits, currentMood]);
 
-  const addTask = (taskData: Omit<Task, "id" | "priority" | "completed">) => {
+  const addTask = (taskData: Omit<Task, "id" | "priority" | "completed" | "subtasks">) => {
     const priority = calculatePriority(taskData, tasks, currentMood);
     const newTask: Task = {
       id: Date.now().toString(),
       ...taskData,
       priority,
-      completed: false
+      completed: false,
+      subtasks: []
     };
 
     setTasks(prev => [...prev, newTask]);
@@ -476,6 +675,117 @@ export const TaskProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const addProject = (projectData: Omit<Project, "id" | "completed" | "completedAt" | "createdAt">) => {
+    const newProject: Project = {
+      id: Date.now().toString(),
+      ...projectData,
+      completed: false,
+      createdAt: new Date()
+    };
+    
+    setProjects(prev => [...prev, newProject]);
+    toast.success("Project added successfully");
+  };
+  
+  const completeProject = (id: string) => {
+    setProjects(prev => prev.map(project => 
+      project.id === id ? {
+        ...project,
+        completed: true,
+        completedAt: new Date()
+      } : project
+    ));
+    
+    // Also mark all tasks in this project as completed
+    setTasks(prev => prev.map(task => 
+      task.projectId === id ? {
+        ...task,
+        completed: true,
+        completedAt: new Date()
+      } : task
+    ));
+    
+    toast.success("Project completed!");
+  };
+  
+  const deleteProject = (id: string) => {
+    setProjects(prev => prev.filter(project => project.id !== id));
+    
+    // Remove all tasks associated with this project
+    setTasks(prev => prev.filter(task => task.projectId !== id));
+    
+    toast.info("Project deleted");
+  };
+  
+  const addSubtask = (taskId: string, subtaskName: string) => {
+    setTasks(prev => prev.map(task => {
+      if (task.id === taskId) {
+        const newSubtask: Subtask = {
+          id: Date.now().toString(),
+          name: subtaskName,
+          completed: false
+        };
+        
+        return {
+          ...task,
+          subtasks: [...task.subtasks, newSubtask]
+        };
+      }
+      return task;
+    }));
+    
+    toast.success("Subtask added");
+  };
+  
+  const completeSubtask = (taskId: string, subtaskId: string) => {
+    setTasks(prev => prev.map(task => {
+      if (task.id === taskId) {
+        const updatedSubtasks = task.subtasks.map(subtask => 
+          subtask.id === subtaskId ? {
+            ...subtask,
+            completed: true,
+            completedAt: new Date()
+          } : subtask
+        );
+        
+        // Check if all subtasks are completed
+        const allSubtasksCompleted = updatedSubtasks.every(subtask => subtask.completed);
+        
+        return {
+          ...task,
+          subtasks: updatedSubtasks,
+          // Auto-complete task if all subtasks are done and task has subtasks
+          completed: allSubtasksCompleted && updatedSubtasks.length > 0 ? true : task.completed,
+          completedAt: allSubtasksCompleted && updatedSubtasks.length > 0 ? new Date() : task.completedAt
+        };
+      }
+      return task;
+    }));
+  };
+  
+  const deleteSubtask = (taskId: string, subtaskId: string) => {
+    setTasks(prev => prev.map(task => {
+      if (task.id === taskId) {
+        return {
+          ...task,
+          subtasks: task.subtasks.filter(subtask => subtask.id !== subtaskId)
+        };
+      }
+      return task;
+    }));
+  };
+  
+  const getProjectResources = (projectId: string): ProjectResource[] => {
+    const project = projects.find(p => p.id === projectId);
+    if (!project) return [];
+    
+    // Get tasks associated with this project
+    const projectTasks = tasks.filter(t => t.projectId === projectId);
+    const taskNames = projectTasks.map(t => t.name);
+    
+    return suggestResources(project.name, taskNames);
+  };
+
   return (
     <TaskContext.Provider value={{ 
       tasks, 
@@ -488,7 +798,15 @@ export const TaskProvider = ({ children }: { children: ReactNode }) => {
       habits,
       currentMood,
       setCurrentMood,
-      suggestHabit
+      suggestHabit,
+      projects,
+      addProject,
+      completeProject,
+      deleteProject,
+      addSubtask,
+      completeSubtask,
+      deleteSubtask,
+      getProjectResources
     }}>
       {children}
     </TaskContext.Provider>
