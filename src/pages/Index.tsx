@@ -36,7 +36,7 @@ const Index = () => {
             <Route index element={<TasksPage />} />
             <Route path="tree" element={<TreePage />} />
             <Route path="community" element={<CommunityPage />} />
-            <Route path="*" element={<Navigate to="/" />} />
+            <Route path="*" element={<Navigate to="/app" />} />
           </Route>
         </Routes>
       </TreeProvider>

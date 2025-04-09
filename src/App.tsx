@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import AuthPage from "./pages/AuthPage";
 import { AuthProvider } from "@/context/AuthContext";
+import LandingPage from "./pages/LandingPage";
 
 function App() {
   // Create a QueryClient instance
@@ -22,8 +23,9 @@ function App() {
             <Toaster />
             <Sonner />
             <Routes>
+              <Route path="/" element={<LandingPage />} />
               <Route path="/auth" element={<AuthPage />} />
-              <Route path="/" element={<Index />} />
+              <Route path="/app/*" element={<Index />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

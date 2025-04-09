@@ -1,4 +1,3 @@
-
 import { Link, useLocation } from "react-router-dom";
 import { Calendar, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -10,10 +9,10 @@ export const BottomNav = () => {
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t shadow-lg">
       <div className="container flex h-16 items-center justify-around">
         <Link 
-          to="/" 
+          to="/app" 
           className={cn(
             "flex flex-col items-center justify-center w-1/3 h-full",
-            location.pathname === '/' ? "text-primary" : "text-muted-foreground"
+            location.pathname === '/app' ? "text-primary" : "text-muted-foreground"
           )}
         >
           <Calendar size={24} />
@@ -21,10 +20,10 @@ export const BottomNav = () => {
         </Link>
         
         <Link 
-          to="/tree" 
+          to="/app/tree" 
           className={cn(
             "flex flex-col items-center justify-center w-1/3 h-full",
-            location.pathname === '/tree' ? "text-alderan-green-light" : "text-muted-foreground"
+            location.pathname === '/app/tree' ? "text-alderan-green-light" : "text-muted-foreground"
           )}
         >
           <TreeIcon size={24} />
@@ -32,10 +31,10 @@ export const BottomNav = () => {
         </Link>
         
         <Link 
-          to="/community" 
+          to="/app/community" 
           className={cn(
             "flex flex-col items-center justify-center w-1/3 h-full",
-            location.pathname === '/community' ? "text-alderan-blue" : "text-muted-foreground"
+            location.pathname === '/app/community' ? "text-alderan-blue" : "text-muted-foreground"
           )}
         >
           <Users size={24} />
