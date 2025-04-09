@@ -3,10 +3,27 @@ import { Link, useLocation } from "react-router-dom";
 import { Calendar, Users, Sparkles, FolderKanban } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTree } from "@/context/TreeContext";
+import { useState, useEffect } from "react";
 
 export const BottomNav = () => {
   const location = useLocation();
-  const { tree } = useTree();
+  const [level, setLevel] = useState(1);
+  
+  // Try to use the tree context, but fallback gracefully if it's not available
+  let treeContext;
+  try {
+    treeContext = useTree();
+  } catch (error) {
+    // If we're outside the TreeProvider context, we'll use the default level
+    console.log("Tree context not available in this route");
+  }
+  
+  useEffect(() => {
+    // Update level from context when available
+    if (treeContext?.tree) {
+      setLevel(treeContext.tree.level);
+    }
+  }, [treeContext?.tree]);
   
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-md border-t shadow-lg">
@@ -72,7 +89,7 @@ export const BottomNav = () => {
             location.pathname === '/app/tree' && "animate-bounce-slow"
           )} />
           <span className="text-xs mt-1 font-medium">
-            Tree L{tree.level}
+            Tree L{level}
           </span>
         </Link>
         
