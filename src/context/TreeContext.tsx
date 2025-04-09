@@ -1,4 +1,3 @@
-
 import { createContext, useState, useContext, useEffect, ReactNode } from "react";
 import { Tool } from "./TaskContext";
 import { toast } from "sonner";
@@ -17,7 +16,8 @@ export interface TreeState {
     barkTexture: "smooth" | "rough" | "binary";
     lighting: "default" | "nightmode" | "lofi" | "loops";
     special: string[];
-  }
+  };
+  snapshotDate?: string; // Added missing property for tree history
 }
 
 interface TreeContextType {

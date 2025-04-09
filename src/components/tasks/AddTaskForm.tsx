@@ -16,6 +16,42 @@ import {
 import { Mic, MicOff, Plus, Sparkles, Brain, Coffee, Zap, Moon } from "lucide-react";
 import { toast } from "sonner";
 
+// Add proper TypeScript declarations for the speech recognition API
+interface SpeechRecognitionEvent extends Event {
+  results: {
+    [index: number]: {
+      [index: number]: {
+        transcript: string;
+      };
+    };
+  };
+  resultIndex: number;
+}
+
+interface SpeechRecognition extends EventTarget {
+  lang: string;
+  interimResults: boolean;
+  maxAlternatives: number;
+  continuous: boolean;
+  start: () => void;
+  stop: () => void;
+  onresult: (event: SpeechRecognitionEvent) => void;
+  onerror: (event: any) => void;
+  onend: () => void;
+}
+
+// Fix TypeScript declarations for the global window object
+declare global {
+  interface Window { 
+    SpeechRecognition: {
+      new (): SpeechRecognition;
+    };
+    webkitSpeechRecognition: {
+      new (): SpeechRecognition;
+    };
+  }
+}
+
 export const AddTaskForm = () => {
   const { addTask, currentMood } = useTasks();
   const [taskName, setTaskName] = useState("");
@@ -75,15 +111,15 @@ export const AddTaskForm = () => {
     
     setIsRecording(true);
     
-    // Use the Web Speech API
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const recognition = new SpeechRecognition();
+    // Use the Web Speech API with proper TypeScript handling
+    const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognitionAPI();
     
     recognition.lang = 'en-US';
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
     
-    recognition.onresult = (event: any) => {
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
       const speechResult = event.results[0][0].transcript;
       processVoiceInput(speechResult);
       setIsRecording(false);
