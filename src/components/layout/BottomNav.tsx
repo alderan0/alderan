@@ -2,13 +2,15 @@
 import { Link, useLocation } from "react-router-dom";
 import { Calendar, Users, Sparkles, FolderKanban } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTree } from "@/context/TreeContext";
 
 export const BottomNav = () => {
   const location = useLocation();
+  const { tree } = useTree();
   
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-md border-t shadow-lg">
-      <div className="container flex h-16 items-center justify-around">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-md border-t shadow-lg">
+      <div className="container mx-auto flex h-16 items-center justify-around max-w-6xl">
         <Link 
           to="/app" 
           className={cn(
@@ -69,7 +71,9 @@ export const BottomNav = () => {
             "transition-transform",
             location.pathname === '/app/tree' && "animate-bounce-slow"
           )} />
-          <span className="text-xs mt-1 font-medium">Tree</span>
+          <span className="text-xs mt-1 font-medium">
+            Tree L{tree.level}
+          </span>
         </Link>
         
         <Link 

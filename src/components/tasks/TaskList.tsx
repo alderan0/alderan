@@ -4,7 +4,7 @@ import { Task, useTasks } from "@/context/TaskContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Check, Clock, Trash, Brain, Sparkles, Coffee, Zap, Moon } from "lucide-react";
+import { Check, Clock, Trash, Brain, Sparkles, Coffee, Zap, Moon, BarChart2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import {
   Dialog,
@@ -13,14 +13,23 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 
 export const TaskList = () => {
-  const { tasks, completeTask, deleteTask, currentMood } = useTasks();
+  const { tasks, completeTask, deleteTask, currentMood, setTaskDifficulty } = useTasks();
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [completionMinutes, setCompletionMinutes] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [difficultyDialogOpen, setDifficultyDialogOpen] = useState(false);
   
   const incompleteTasks = tasks.filter(task => !task.completed);
   const completedTasks = tasks.filter(task => task.completed);
@@ -28,6 +37,19 @@ export const TaskList = () => {
   const handleCompleteClick = (task: Task) => {
     setSelectedTaskId(task.id);
     setIsDialogOpen(true);
+  };
+  
+  const handleDifficultyClick = (task: Task) => {
+    setSelectedTaskId(task.id);
+    setDifficultyDialogOpen(true);
+  };
+  
+  const handleDifficultySet = (difficulty: "easy" | "medium" | "hard") => {
+    if (selectedTaskId) {
+      setTaskDifficulty(selectedTaskId, difficulty);
+      setSelectedTaskId(null);
+      setDifficultyDialogOpen(false);
+    }
   };
   
   const handleCompleteSubmit = () => {
@@ -50,6 +72,17 @@ export const TaskList = () => {
     if (priority >= 40) return "bg-yellow-500";
     if (priority >= 20) return "bg-blue-500";
     return "bg-green-500";
+  };
+  
+  // Get difficulty badge style
+  const getDifficultyBadge = (difficulty?: number) => {
+    if (!difficulty) return { text: "Not rated", class: "bg-gray-500" };
+    
+    if (difficulty >= 80) return { text: "Very Hard", class: "bg-red-500" };
+    if (difficulty >= 60) return { text: "Hard", class: "bg-orange-500" };
+    if (difficulty >= 40) return { text: "Medium", class: "bg-yellow-500" };
+    if (difficulty >= 20) return { text: "Easy", class: "bg-blue-500" };
+    return { text: "Very Easy", class: "bg-green-500" };
   };
   
   const getEstimatedTimeText = (minutes: number) => {
@@ -86,67 +119,91 @@ export const TaskList = () => {
       {/* Incomplete tasks */}
       {incompleteTasks.length > 0 ? (
         <div className="grid gap-4">
-          {incompleteTasks.map(task => (
-            <Card 
-              key={task.id}
-              className={`transition-all hover:shadow-md ${getMoodMatchStyle(task)}`}
-            >
-              <CardHeader className="py-3">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg font-medium">{task.name}</CardTitle>
-                  <div 
-                    className={`h-3 w-3 rounded-full ${getPriorityColor(task.priority)}`} 
-                    title={`Priority: ${Math.round(task.priority)}/100`}
-                  />
-                </div>
-              </CardHeader>
-              <CardContent className="py-2">
-                <div className="flex items-center text-sm text-muted-foreground">
-                  <Clock size={16} className="mr-1" />
-                  <span>Due {formatDeadline(task.deadline)}</span>
-                  <span className="mx-2">•</span>
-                  <span>{getEstimatedTimeText(task.estimatedTime)}</span>
-                  
-                  {task.mood && (
-                    <>
-                      <span className="mx-2">•</span>
-                      <div className="flex items-center">
-                        {getMoodIcon(task.mood)}
-                        <span>{task.mood}</span>
-                        {task.mood === currentMood && (
-                          <Badge variant="outline" className="ml-1 text-[10px] py-0 h-4 bg-purple-100 text-purple-800 border-purple-300">
-                            Matching Vibe
-                          </Badge>
-                        )}
-                      </div>
-                    </>
-                  )}
-                </div>
-              </CardContent>
-              <CardFooter className="pt-1 pb-3 flex justify-between">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => deleteTask(task.id)}
-                  className="text-muted-foreground"
-                >
-                  <Trash size={16} className="mr-1" />
-                  Delete
-                </Button>
-                <Button 
-                  variant="default" 
-                  size="sm" 
-                  onClick={() => handleCompleteClick(task)}
-                  className={task.mood === currentMood ? 
-                    "bg-gradient-to-r from-purple-500 to-blue-500" : 
-                    ""}
-                >
-                  <Check size={16} className="mr-1" />
-                  Complete
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
+          {incompleteTasks.map(task => {
+            const difficultyInfo = getDifficultyBadge(task.difficulty);
+            
+            return (
+              <Card 
+                key={task.id}
+                className={`transition-all hover:shadow-md ${getMoodMatchStyle(task)}`}
+              >
+                <CardHeader className="py-3">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg font-medium">{task.name}</CardTitle>
+                    <div 
+                      className={`h-3 w-3 rounded-full ${getPriorityColor(task.priority)}`} 
+                      title={`Priority: ${Math.round(task.priority)}/100`}
+                    />
+                  </div>
+                </CardHeader>
+                <CardContent className="py-2">
+                  <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                    <div className="flex items-center">
+                      <Clock size={16} className="mr-1" />
+                      <span>Due {formatDeadline(task.deadline)}</span>
+                    </div>
+                    
+                    <span className="mx-1">•</span>
+                    <span>{getEstimatedTimeText(task.estimatedTime)}</span>
+                    
+                    {task.mood && (
+                      <>
+                        <span className="mx-1">•</span>
+                        <div className="flex items-center">
+                          {getMoodIcon(task.mood)}
+                          <span>{task.mood}</span>
+                          {task.mood === currentMood && (
+                            <Badge variant="outline" className="ml-1 text-[10px] py-0 h-4 bg-purple-100 text-purple-800 border-purple-300">
+                              Matching Vibe
+                            </Badge>
+                          )}
+                        </div>
+                      </>
+                    )}
+                    
+                    <div className="flex items-center ml-auto">
+                      <BarChart2 size={16} className="mr-1" />
+                      <Badge className={difficultyInfo.class}>
+                        {difficultyInfo.text}
+                      </Badge>
+                    </div>
+                  </div>
+                </CardContent>
+                <CardFooter className="pt-1 pb-3 flex flex-wrap gap-2 justify-between">
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => deleteTask(task.id)}
+                      className="text-muted-foreground"
+                    >
+                      <Trash size={16} className="mr-1" />
+                      Delete
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDifficultyClick(task)}
+                    >
+                      <BarChart2 size={16} className="mr-1" />
+                      Rate
+                    </Button>
+                  </div>
+                  <Button 
+                    variant="default" 
+                    size="sm" 
+                    onClick={() => handleCompleteClick(task)}
+                    className={task.mood === currentMood ? 
+                      "bg-gradient-to-r from-purple-500 to-blue-500" : 
+                      ""}
+                  >
+                    <Check size={16} className="mr-1" />
+                    Complete
+                  </Button>
+                </CardFooter>
+              </Card>
+            );
+          })}
         </div>
       ) : (
         <div className="text-center py-8">
@@ -159,29 +216,41 @@ export const TaskList = () => {
         <div className="mt-8">
           <h2 className="text-xl font-semibold mb-4">Completed Tasks</h2>
           <div className="grid gap-3">
-            {completedTasks.map(task => (
-              <div key={task.id} className="flex items-center px-3 py-2 rounded-md bg-muted">
-                <Check size={16} className="mr-2 text-green-500" />
-                <span className="text-muted-foreground line-through">{task.name}</span>
-                {task.mood && (
-                  <div className="ml-2 flex items-center">
-                    {getMoodIcon(task.mood)}
+            {completedTasks.map(task => {
+              const difficultyInfo = getDifficultyBadge(task.difficulty);
+              
+              return (
+                <div key={task.id} className="flex items-center px-3 py-2 rounded-md bg-muted">
+                  <Check size={16} className="mr-2 text-green-500" />
+                  <span className="text-muted-foreground line-through">{task.name}</span>
+                  
+                  <div className="flex items-center ml-auto gap-2">
+                    {task.mood && (
+                      <div className="flex items-center">
+                        {getMoodIcon(task.mood)}
+                      </div>
+                    )}
+                    
+                    <Badge className={cn("text-[10px]", difficultyInfo.class)}>
+                      {difficultyInfo.text}
+                    </Badge>
+                    
+                    {task.actualTime && (
+                      <Badge variant="outline">
+                        {getEstimatedTimeText(task.actualTime)}
+                      </Badge>
+                    )}
                   </div>
-                )}
-                {task.actualTime && (
-                  <Badge variant="outline" className="ml-auto">
-                    {getEstimatedTimeText(task.actualTime)}
-                  </Badge>
-                )}
-              </div>
-            ))}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
       
       {/* Complete task dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Complete Task</DialogTitle>
           </DialogHeader>
@@ -202,6 +271,44 @@ export const TaskList = () => {
               Complete Task
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Rate difficulty dialog */}
+      <Dialog open={difficultyDialogOpen} onOpenChange={setDifficultyDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Rate Task Difficulty</DialogTitle>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Rating the difficulty helps the AI better calculate points and rewards
+            </p>
+            
+            <div className="flex justify-center gap-3">
+              <Button
+                variant="outline"
+                className="border-blue-500 text-blue-500 hover:text-blue-600 hover:bg-blue-50"
+                onClick={() => handleDifficultySet("easy")}
+              >
+                Easy
+              </Button>
+              <Button
+                variant="outline"
+                className="border-yellow-500 text-yellow-500 hover:text-yellow-600 hover:bg-yellow-50"
+                onClick={() => handleDifficultySet("medium")}
+              >
+                Medium
+              </Button>
+              <Button
+                variant="outline"
+                className="border-red-500 text-red-500 hover:text-red-600 hover:bg-red-50"
+                onClick={() => handleDifficultySet("hard")}
+              >
+                Hard
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

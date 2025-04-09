@@ -1,5 +1,6 @@
 import { createContext, useState, useContext, useEffect, ReactNode } from "react";
 import { toast } from "sonner";
+import { useTree } from "./TreeContext";
 
 export interface Subtask {
   id: string;
@@ -21,6 +22,8 @@ export interface Task {
   projectId?: string; // Reference to parent project
   subtasks: Subtask[]; // Added subtasks
   notes?: string;
+  difficulty?: number; // Task difficulty score (0-100)
+  userRating?: "easy" | "medium" | "hard"; // User-provided difficulty rating
 }
 
 export interface Project {
@@ -65,12 +68,12 @@ export interface Tool {
     style?: string;
   };
   used: boolean;
-  tier: "sapling" | "young" | "mature";
+  level: number; // Changed from tier to level (1-20)
 }
 
 interface TaskContextType {
   tasks: Task[];
-  addTask: (task: Omit<Task, "id" | "priority" | "completed" | "subtasks">) => void;
+  addTask: (task: Omit<Task, "id" | "priority" | "completed" | "subtasks" | "difficulty">) => void;
   completeTask: (id: string, actualTime: number) => void;
   deleteTask: (id: string) => void;
   prioritizeTasks: () => void;
@@ -88,85 +91,119 @@ interface TaskContextType {
   completeSubtask: (taskId: string, subtaskId: string) => void;
   deleteSubtask: (taskId: string, subtaskId: string) => void;
   getProjectResources: (projectId: string) => ProjectResource[];
+  setTaskDifficulty: (taskId: string, rating: "easy" | "medium" | "hard") => void;
 }
 
 const TaskContext = createContext<TaskContextType | undefined>(undefined);
 
-// Updated tools database with vibe coder themed tools
 const toolsDatabase = [
   {
     name: "Syntax Highlighter Brush",
     type: "customize" as const,
     description: "Recolors leaves in code syntax themes",
     effect: { beauty: 8, style: "syntax" },
-    tier: "sapling" as const
+    level: 1
   },
   {
     name: "Debugging Fertilizer",
     type: "fertilize" as const,
     description: "Speeds up tree growth by fixing bugs",
     effect: { height: 10, health: 8 },
-    tier: "sapling" as const
+    level: 2
   },
   {
     name: "Pixel Pruner",
     type: "prune" as const,
     description: "Shapes tree into pixel art",
     effect: { beauty: 12, style: "pixel" },
-    tier: "young" as const
+    level: 4
   },
   {
     name: "Lo-Fi Watering Can",
     type: "water" as const,
     description: "Adds a lo-fi aesthetic with muted tones",
     effect: { height: 6, health: 4, style: "lofi" },
-    tier: "sapling" as const
+    level: 3
   },
   {
     name: "Night Mode Lantern",
     type: "illuminate" as const,
     description: "Illuminates tree with a dark-mode vibe",
     effect: { beauty: 15, style: "nightmode" },
-    tier: "mature" as const
+    level: 12
   },
   {
     name: "Code Comment Bird",
     type: "decorate" as const,
     description: "Adds birds displaying random code comments",
     effect: { beauty: 10, style: "birds" },
-    tier: "young" as const
+    level: 6
   },
   {
     name: "Binary Bark Engraver",
     type: "customize" as const,
     description: "Carves binary patterns into bark",
     effect: { beauty: 8, style: "binary" },
-    tier: "young" as const
+    level: 8
   },
   {
     name: "Function Flower Pot",
     type: "enhance" as const,
     description: "Grows function-shaped flowers around your tree",
     effect: { beauty: 18, leaves: 8, style: "functions" },
-    tier: "mature" as const
+    level: 15
   },
   {
     name: "Looping Lights",
     type: "illuminate" as const,
     description: "Adds animated light loops using recursion",
     effect: { beauty: 14, style: "loops" },
-    tier: "mature" as const
+    level: 10
   },
   {
     name: "Recursive Roots",
     type: "enhance" as const,
     description: "Extends roots in beautiful recursive patterns",
     effect: { health: 12, beauty: 10, style: "recursive" },
-    tier: "mature" as const
+    level: 18
   },
+  {
+    name: "Algorithm Animator",
+    type: "enhance" as const,
+    description: "Visualizes sorting algorithms with branch movements",
+    effect: { beauty: 20, health: 5, style: "algorithm" },
+    level: 14
+  },
+  {
+    name: "Data Structure Decorator",
+    type: "decorate" as const,
+    description: "Adds visual representations of data structures to your tree",
+    effect: { beauty: 15, leaves: 10, style: "datastructure" },
+    level: 16
+  },
+  {
+    name: "API Connector",
+    type: "customize" as const,
+    description: "Connects your tree to external resources with animated tendrils",
+    effect: { height: 12, beauty: 12, style: "api" },
+    level: 9
+  },
+  {
+    name: "Query Optimizer",
+    type: "enhance" as const,
+    description: "Optimizes tree performance with subtle glowing patterns",
+    effect: { health: 15, beauty: 8, style: "query" },
+    level: 11
+  },
+  {
+    name: "Quantum Quantum",
+    type: "illuminate" as const,
+    description: "Adds quantum computing-inspired light effects",
+    effect: { beauty: 25, style: "quantum" },
+    level: 20
+  }
 ];
 
-// Database of resources and apps to suggest
 const resourcesDatabase: ProjectResource[] = [
   {
     id: "1",
@@ -250,45 +287,36 @@ const resourcesDatabase: ProjectResource[] = [
   },
 ];
 
-// Enhanced AI prioritization function with mood weighting
 const calculatePriority = (task: Omit<Task, "id" | "priority" | "completed" | "subtasks">, tasks: Task[], currentMood: string): number => {
   const now = new Date();
   const deadlineDate = new Date(task.deadline);
   
-  // Calculate hours until deadline
   const hoursUntilDeadline = Math.max(0, (deadlineDate.getTime() - now.getTime()) / (1000 * 60 * 60));
   
-  // Higher priority for tasks due sooner
   const deadlineScore = 100 - Math.min(100, hoursUntilDeadline);
   
-  // Higher priority for shorter tasks
   const timeScore = 100 - Math.min(100, task.estimatedTime);
   
-  // Mood compatibility score (if task has a mood)
-  let moodScore = 50; // Neutral by default
+  let moodScore = 50;
   if (task.mood && task.mood === currentMood) {
-    moodScore = 100; // Perfect match
+    moodScore = 100;
   } else if (task.mood) {
-    // Some compatibility based on mood pairs that work well together
     if ((task.mood === "Creative" && currentMood === "Relaxed") || 
         (task.mood === "Focused" && currentMood === "Energetic") ||
         (task.mood === "Relaxed" && currentMood === "Tired")) {
-      moodScore = 75; // Good match
+      moodScore = 75;
     } else {
-      moodScore = 25; // Not a good match
+      moodScore = 25;
     }
   }
   
-  // Combine scores (70% traditional factors, 30% mood)
   return ((deadlineScore * 0.5) + (timeScore * 0.2)) * 0.7 + (moodScore * 0.3);
 };
 
-// Detect patterns in user's task completion to suggest habits
 const detectHabitPattern = (tasks: Task[]): Habit | null => {
   const completedTasks = tasks.filter(task => task.completed);
   if (completedTasks.length < 5) return null;
   
-  // Get time of day distribution
   const timeDistribution = {
     morning: 0,
     afternoon: 0,
@@ -296,26 +324,22 @@ const detectHabitPattern = (tasks: Task[]): Habit | null => {
     night: 0
   };
   
-  // Get mood distribution
   const moodDistribution: Record<string, number> = {};
   
   completedTasks.forEach(task => {
     const completedAt = task.completedAt || new Date();
     const hour = completedAt.getHours();
     
-    // Categorize time of day
     if (hour >= 5 && hour < 12) timeDistribution.morning++;
     else if (hour >= 12 && hour < 17) timeDistribution.afternoon++;
     else if (hour >= 17 && hour < 22) timeDistribution.evening++;
     else timeDistribution.night++;
     
-    // Count mood if available
     if (task.mood) {
       moodDistribution[task.mood] = (moodDistribution[task.mood] || 0) + 1;
     }
   });
   
-  // Find most productive time
   let mostProductiveTime: "morning" | "afternoon" | "evening" | "night" = "morning";
   let maxTime = timeDistribution.morning;
   
@@ -332,7 +356,6 @@ const detectHabitPattern = (tasks: Task[]): Habit | null => {
     maxTime = timeDistribution.night;
   }
   
-  // Find preferred mood if available
   let preferredMood: "Creative" | "Focused" | "Relaxed" | "Energetic" | "Tired" | undefined;
   let maxMood = 0;
   
@@ -343,7 +366,6 @@ const detectHabitPattern = (tasks: Task[]): Habit | null => {
     }
   });
   
-  // Create habit suggestions based on patterns
   let habitName = "";
   
   if (mostProductiveTime === "morning") {
@@ -370,65 +392,66 @@ const detectHabitPattern = (tasks: Task[]): Habit | null => {
   };
 };
 
-// New function to suggest resources based on project and task names
 const suggestResources = (projectName: string, taskNames: string[]): ProjectResource[] => {
-  // Convert everything to lowercase for easier matching
   const projectLower = projectName.toLowerCase();
   const taskLower = taskNames.map(t => t.toLowerCase());
   
   const suggestions: ProjectResource[] = [];
   const allKeywords = [projectLower, ...taskLower].join(" ");
   
-  // Define keyword sets for matching
   const webDevKeywords = ["web", "website", "frontend", "html", "css", "javascript", "js", "react", "vue", "angular"];
   const designKeywords = ["design", "ui", "ux", "mockup", "wireframe", "figma", "sketch", "prototype"];
   const backendKeywords = ["backend", "api", "server", "database", "db", "node", "express", "django", "flask", "sql"];
   const mobileKeywords = ["mobile", "app", "ios", "android", "react native", "flutter", "swift", "kotlin"];
   const devopsKeywords = ["devops", "deployment", "ci/cd", "docker", "kubernetes", "aws", "cloud"];
   
-  // Check which categories match the project/tasks
   const hasWebDev = webDevKeywords.some(kw => allKeywords.includes(kw));
   const hasDesign = designKeywords.some(kw => allKeywords.includes(kw));
   const hasBackend = backendKeywords.some(kw => allKeywords.includes(kw));
   const hasMobile = mobileKeywords.some(kw => allKeywords.includes(kw));
   const hasDevOps = devopsKeywords.some(kw => allKeywords.includes(kw));
   
-  // Suggest VS Code for almost any coding project
   if (hasWebDev || hasBackend || hasMobile || hasDevOps) {
     suggestions.push(resourcesDatabase.find(r => r.name === "VS Code")!);
   }
   
-  // For design-related tasks
   if (hasDesign) {
     suggestions.push(resourcesDatabase.find(r => r.name === "Figma")!);
     suggestions.push(resourcesDatabase.find(r => r.name === "Dribbble")!);
   }
   
-  // For web development
   if (hasWebDev) {
     suggestions.push(resourcesDatabase.find(r => r.name === "MDN Web Docs")!);
     suggestions.push(resourcesDatabase.find(r => r.name === "Frontend Masters")!);
   }
   
-  // For backend development
   if (hasBackend) {
     suggestions.push(resourcesDatabase.find(r => r.name === "Postman")!);
     suggestions.push(resourcesDatabase.find(r => r.name === "DevDocs")!);
   }
   
-  // For any project, suggest GitHub and Stack Overflow
   suggestions.push(resourcesDatabase.find(r => r.name === "GitHub")!);
   suggestions.push(resourcesDatabase.find(r => r.name === "Stack Overflow")!);
   
-  // For project management
   suggestions.push(resourcesDatabase.find(r => r.name === "Notion")!);
   
-  // Deduplicate and limit to 5 suggestions
   const uniqueSuggestions = Array.from(new Set(suggestions));
   return uniqueSuggestions.slice(0, 5);
 };
 
+const calculateTaskDifficulty = (name: string, notes: string, estimatedTime: number, rating: "easy" | "medium" | "hard"): number => {
+  const baseDifficulty = 50;
+  
+  if (rating === "easy") return baseDifficulty + 10;
+  if (rating === "medium") return baseDifficulty;
+  if (rating === "hard") return baseDifficulty - 10;
+  
+  return baseDifficulty;
+};
+
 export const TaskProvider = ({ children }: { children: ReactNode }) => {
+  const { calculateTaskDifficulty, addPoints, getCurrentLevel } = useTree();
+  
   const [tasks, setTasks] = useState<Task[]>(() => {
     const saved = localStorage.getItem('tasks');
     if (saved) {
@@ -437,7 +460,7 @@ export const TaskProvider = ({ children }: { children: ReactNode }) => {
           ...task,
           deadline: new Date(task.deadline),
           completedAt: task.completedAt ? new Date(task.completedAt) : undefined,
-          subtasks: task.subtasks || [] // Ensure subtasks array exists
+          subtasks: task.subtasks || []
         }));
       } catch (e) {
         return [];
@@ -505,7 +528,6 @@ export const TaskProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem('habits', JSON.stringify(habits));
     localStorage.setItem('currentMood', currentMood);
     
-    // Update suggested tasks whenever tasks or mood changes
     const newSuggested = [...tasks]
       .filter(task => !task.completed)
       .sort((a, b) => b.priority - a.priority)
@@ -513,7 +535,6 @@ export const TaskProvider = ({ children }: { children: ReactNode }) => {
     
     setSuggestedTasks(newSuggested);
     
-    // Update habit streaks
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
@@ -524,11 +545,9 @@ export const TaskProvider = ({ children }: { children: ReactNode }) => {
         const lastCompleted = new Date(habit.lastCompleted);
         lastCompleted.setHours(0, 0, 0, 0);
         
-        // Calculate difference in days
         const diffTime = today.getTime() - lastCompleted.getTime();
         const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
         
-        // If completed today, keep streak, if yesterday, streak continues, otherwise reset
         if (diffDays === 0) {
           return habit;
         } else if (diffDays === 1) {
@@ -542,12 +561,21 @@ export const TaskProvider = ({ children }: { children: ReactNode }) => {
     );
   }, [tasks, projects, tools, habits, currentMood]);
 
-  const addTask = (taskData: Omit<Task, "id" | "priority" | "completed" | "subtasks">) => {
+  const addTask = (taskData: Omit<Task, "id" | "priority" | "completed" | "subtasks" | "difficulty">) => {
     const priority = calculatePriority(taskData, tasks, currentMood);
+    
+    const difficultyScore = calculateTaskDifficulty(
+      taskData.name, 
+      taskData.notes || "", 
+      taskData.estimatedTime, 
+      taskData.userRating
+    );
+    
     const newTask: Task = {
       id: Date.now().toString(),
       ...taskData,
       priority,
+      difficulty: difficultyScore,
       completed: false,
       subtasks: []
     };
@@ -555,11 +583,13 @@ export const TaskProvider = ({ children }: { children: ReactNode }) => {
     setTasks(prev => [...prev, newTask]);
     toast.success("Task added successfully");
     
-    // Re-prioritize all tasks after adding a new one
     prioritizeTasks();
   };
 
   const completeTask = (id: string, actualTime: number) => {
+    const completedTask = tasks.find(task => task.id === id);
+    if (!completedTask) return;
+    
     setTasks(prev => prev.map(task => 
       task.id === id ? {
         ...task, 
@@ -569,36 +599,36 @@ export const TaskProvider = ({ children }: { children: ReactNode }) => {
       } : task
     ));
 
-    // Generate a random tool as a reward, with tier based on task priority
-    const completedTask = tasks.find(task => task.id === id);
-    let tierCategory: "sapling" | "young" | "mature" = "sapling";
+    const taskDifficulty = completedTask.difficulty || 50;
+    const pointsAwarded = Math.round(taskDifficulty);
     
-    if (completedTask && completedTask.priority > 80) {
-      tierCategory = "mature";
-    } else if (completedTask && completedTask.priority > 50) {
-      tierCategory = "young";
+    addPoints(pointsAwarded);
+    
+    const currentLevel = getCurrentLevel();
+    
+    const difficultyBonus = Math.floor(taskDifficulty / 20);
+    const maxToolLevel = Math.min(20, currentLevel + difficultyBonus);
+    
+    const eligibleTools = toolsDatabase.filter(tool => 
+      tool.level <= maxToolLevel
+    );
+    
+    if (eligibleTools.length > 0) {
+      const randomToolIndex = Math.floor(Math.random() * eligibleTools.length);
+      const toolTemplate = eligibleTools[randomToolIndex];
+      
+      const newTool: Tool = {
+        id: Date.now().toString(),
+        ...toolTemplate,
+        used: false
+      };
+      
+      setTools(prev => [...prev, newTool]);
+      toast.success(`Task completed! Earned ${pointsAwarded} points and ${newTool.name}!`);
+    } else {
+      toast.success(`Task completed! Earned ${pointsAwarded} points!`);
     }
     
-    // Filter tools by tier
-    const eligibleTools = toolsDatabase.filter(tool => {
-      if (tierCategory === "mature") return true; // All tools eligible
-      if (tierCategory === "young") return tool.tier !== "mature"; // Sapling and young only
-      return tool.tier === "sapling"; // Only sapling tools
-    });
-    
-    const randomToolIndex = Math.floor(Math.random() * eligibleTools.length);
-    const toolTemplate = eligibleTools[randomToolIndex];
-    
-    const newTool: Tool = {
-      id: Date.now().toString(),
-      ...toolTemplate,
-      used: false
-    };
-    
-    setTools(prev => [...prev, newTool]);
-    toast.success(`Task completed! You earned: ${newTool.name}`);
-    
-    // Update habit completion if task completion time matches habit time of day
     const now = new Date();
     const hour = now.getHours();
     let timeOfDay: "morning" | "afternoon" | "evening" | "night" = "morning";
@@ -616,7 +646,6 @@ export const TaskProvider = ({ children }: { children: ReactNode }) => {
       )
     );
     
-    // Suggest a new habit if we have enough data
     suggestHabit();
   };
 
@@ -627,11 +656,9 @@ export const TaskProvider = ({ children }: { children: ReactNode }) => {
 
   const prioritizeTasks = () => {
     setTasks(prev => {
-      // Only re-prioritize incomplete tasks
       const incompleteTasks = prev.filter(task => !task.completed);
       const completedTasks = prev.filter(task => task.completed);
       
-      // Calculate new priorities with mood weighting
       const reprioritized = incompleteTasks.map(task => {
         const recalculatedPriority = calculatePriority(
           {
@@ -650,7 +677,6 @@ export const TaskProvider = ({ children }: { children: ReactNode }) => {
         };
       });
       
-      // Sort by priority (highest first)
       reprioritized.sort((a, b) => b.priority - a.priority);
       
       return [...reprioritized, ...completedTasks];
@@ -661,7 +687,6 @@ export const TaskProvider = ({ children }: { children: ReactNode }) => {
     const habitSuggestion = detectHabitPattern(tasks);
     if (!habitSuggestion) return;
     
-    // Check if we already have a similar habit
     const existingSimilar = habits.find(h => 
       h.preferredTimeOfDay === habitSuggestion.preferredTimeOfDay && 
       h.preferredMood === habitSuggestion.preferredMood
@@ -696,7 +721,6 @@ export const TaskProvider = ({ children }: { children: ReactNode }) => {
       } : project
     ));
     
-    // Also mark all tasks in this project as completed
     setTasks(prev => prev.map(task => 
       task.projectId === id ? {
         ...task,
@@ -711,7 +735,6 @@ export const TaskProvider = ({ children }: { children: ReactNode }) => {
   const deleteProject = (id: string) => {
     setProjects(prev => prev.filter(project => project.id !== id));
     
-    // Remove all tasks associated with this project
     setTasks(prev => prev.filter(task => task.projectId !== id));
     
     toast.info("Project deleted");
@@ -748,13 +771,11 @@ export const TaskProvider = ({ children }: { children: ReactNode }) => {
           } : subtask
         );
         
-        // Check if all subtasks are completed
         const allSubtasksCompleted = updatedSubtasks.every(subtask => subtask.completed);
         
         return {
           ...task,
           subtasks: updatedSubtasks,
-          // Auto-complete task if all subtasks are done and task has subtasks
           completed: allSubtasksCompleted && updatedSubtasks.length > 0 ? true : task.completed,
           completedAt: allSubtasksCompleted && updatedSubtasks.length > 0 ? new Date() : task.completedAt
         };
@@ -779,11 +800,32 @@ export const TaskProvider = ({ children }: { children: ReactNode }) => {
     const project = projects.find(p => p.id === projectId);
     if (!project) return [];
     
-    // Get tasks associated with this project
     const projectTasks = tasks.filter(t => t.projectId === projectId);
     const taskNames = projectTasks.map(t => t.name);
     
     return suggestResources(project.name, taskNames);
+  };
+
+  const setTaskDifficulty = (taskId: string, rating: "easy" | "medium" | "hard") => {
+    setTasks(prev => prev.map(task => {
+      if (task.id === taskId) {
+        const newDifficulty = calculateTaskDifficulty(
+          task.name,
+          task.notes || "",
+          task.estimatedTime,
+          rating
+        );
+        
+        return {
+          ...task,
+          userRating: rating,
+          difficulty: newDifficulty
+        };
+      }
+      return task;
+    }));
+    
+    toast.success(`Task difficulty set to ${rating}`);
   };
 
   return (
@@ -806,7 +848,8 @@ export const TaskProvider = ({ children }: { children: ReactNode }) => {
       addSubtask,
       completeSubtask,
       deleteSubtask,
-      getProjectResources
+      getProjectResources,
+      setTaskDifficulty
     }}>
       {children}
     </TaskContext.Provider>

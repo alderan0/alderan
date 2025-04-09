@@ -7,10 +7,11 @@ export interface TreeState {
   leaves: number; // 0-100
   health: number; // 1-100
   beauty: number; // 1-100
-  level: number; // 1-10
+  level: number; // 1-20
   decorations: string[];
   tasksCompleted: number;
-  tier: "sapling" | "young" | "mature";
+  points: number;
+  levelStatus: "beginner" | "intermediate" | "advanced" | "expert";
   styles: {
     leafStyle: "default" | "syntax" | "pixel" | "binary";
     barkTexture: "smooth" | "rough" | "binary";
@@ -18,17 +19,21 @@ export interface TreeState {
     special: string[];
   };
   snapshotDate?: string; // Added missing property for tree history
+  lastReset?: string; // Date of last monthly reset
 }
 
 interface TreeContextType {
   tree: TreeState;
   applyTool: (tool: Tool) => void;
   resetTree: () => void;
-  getTreeTier: () => "sapling" | "young" | "mature";
+  getCurrentLevel: () => number;
   treeHistory: TreeState[];
   galleryIndex: number;
   viewPastTree: (index: number) => void;
   viewLatestTree: () => void;
+  calculateTaskDifficulty: (taskName: string, description: string, 
+    estimatedTime: number, userRating?: "easy" | "medium" | "hard") => number;
+  addPoints: (points: number) => void;
 }
 
 const TreeContext = createContext<TreeContextType | undefined>(undefined);
@@ -41,13 +46,42 @@ const initialTreeState: TreeState = {
   level: 1,
   decorations: [],
   tasksCompleted: 0,
-  tier: "sapling",
+  points: 0,
+  levelStatus: "beginner",
   styles: {
     leafStyle: "default",
     barkTexture: "smooth",
     lighting: "default",
     special: []
   }
+};
+
+// Helper function to check if a reset is needed (first day of the month)
+const isMonthlyResetNeeded = (lastReset?: string): boolean => {
+  const today = new Date();
+  
+  // If it's the first day of the month
+  if (today.getDate() === 1) {
+    if (!lastReset) return true;
+    
+    const lastResetDate = new Date(lastReset);
+    const lastResetMonth = lastResetDate.getMonth();
+    const lastResetYear = lastResetDate.getFullYear();
+    
+    // Check if we've already reset this month
+    return !(lastResetMonth === today.getMonth() && lastResetYear === today.getFullYear());
+  }
+  
+  return false;
+};
+
+// Calculate level thresholds with increasing difficulty
+const getLevelThreshold = (level: number): number => {
+  // Base points needed for level 1
+  const basePoints = 100;
+  
+  // Exponential difficulty increase
+  return Math.floor(basePoints * Math.pow(1.4, level - 1));
 };
 
 export const TreeProvider = ({ children }: { children: ReactNode }) => {
@@ -77,29 +111,44 @@ export const TreeProvider = ({ children }: { children: ReactNode }) => {
   
   const [galleryIndex, setGalleryIndex] = useState(-1); // -1 means showing current tree
 
+  // Check for monthly reset
+  useEffect(() => {
+    if (isMonthlyResetNeeded(tree.lastReset)) {
+      // Create a snapshot before resetting
+      const snapshot = {
+        ...tree,
+        snapshotDate: new Date().toISOString()
+      };
+      
+      setTreeHistory(prev => [...prev, snapshot]);
+      
+      // Reset tree but keep the history
+      setTree({
+        ...initialTreeState,
+        lastReset: new Date().toISOString()
+      });
+      
+      toast.info("Monthly reset: Your tree has been reset for the new month! Your previous tree is saved in your gallery.");
+    }
+  }, [tree.lastReset]);
+
   useEffect(() => {
     localStorage.setItem('tree', JSON.stringify(tree));
     
-    // Calculate level based on tree stats
-    const totalStats = tree.height + tree.leaves + tree.health + tree.beauty;
-    const newLevel = Math.min(10, Math.max(1, Math.floor(totalStats / 40) + 1));
-    
-    // Determine tree tier based on tasks completed
-    let newTier: "sapling" | "young" | "mature" = "sapling";
-    if (tree.tasksCompleted > 150) {
-      newTier = "mature";
-    } else if (tree.tasksCompleted > 50) {
-      newTier = "young";
+    // Calculate level status based on level
+    let newLevelStatus: "beginner" | "intermediate" | "advanced" | "expert" = "beginner";
+    if (tree.level > 15) {
+      newLevelStatus = "expert";
+    } else if (tree.level > 10) {
+      newLevelStatus = "advanced";
+    } else if (tree.level > 5) {
+      newLevelStatus = "intermediate";
     }
     
-    if (newLevel !== tree.level || newTier !== tree.tier) {
-      setTree(prev => ({ ...prev, level: newLevel, tier: newTier }));
-      if (newLevel > tree.level) {
-        toast.success(`Your tree grew to level ${newLevel}!`);
-      }
-      if (newTier !== tree.tier) {
-        toast.success(`Your tree evolved to ${newTier} tier! New customization options unlocked.`);
-      }
+    // Update level status if needed
+    if (newLevelStatus !== tree.levelStatus) {
+      setTree(prev => ({ ...prev, levelStatus: newLevelStatus }));
+      toast.success(`Your expertise has increased to ${newLevelStatus} level!`);
     }
     
     // Save tree history snapshot weekly
@@ -108,7 +157,7 @@ export const TreeProvider = ({ children }: { children: ReactNode }) => {
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
     
-    if (!lastSnapshot || new Date(lastSnapshot.tasksCompleted) < oneWeekAgo) {
+    if (!lastSnapshot || new Date(lastSnapshot.snapshotDate || "") < oneWeekAgo) {
       // Create a snapshot with timestamp
       const snapshot = {
         ...tree,
@@ -120,6 +169,76 @@ export const TreeProvider = ({ children }: { children: ReactNode }) => {
     
     localStorage.setItem('treeHistory', JSON.stringify(treeHistory));
   }, [tree, treeHistory]);
+
+  // Function to calculate task difficulty based on multiple factors
+  const calculateTaskDifficulty = (
+    taskName: string, 
+    description: string,
+    estimatedTime: number,
+    userRating?: "easy" | "medium" | "hard"
+  ): number => {
+    // Base difficulty from estimated time (0-40 points)
+    const timeBasedDifficulty = Math.min(40, Math.floor(estimatedTime / 3));
+    
+    // Difficulty based on task name complexity (0-20 points)
+    const difficultyKeywords = [
+      'complex', 'difficult', 'challenging', 'hard', 'advanced', 'refactor',
+      'optimize', 'implement', 'debug', 'fix', 'create', 'develop', 'design'
+    ];
+    
+    const complexityScore = difficultyKeywords.reduce((score, keyword) => {
+      if (taskName.toLowerCase().includes(keyword) || 
+          (description && description.toLowerCase().includes(keyword))) {
+        return score + 3;
+      }
+      return score;
+    }, 0);
+    
+    const nameBasedDifficulty = Math.min(20, complexityScore);
+    
+    // User-supplied difficulty rating (0-40 points)
+    let userRatingScore = 20; // Default medium
+    if (userRating === "easy") userRatingScore = 10;
+    if (userRating === "hard") userRatingScore = 40;
+    
+    // Total difficulty (0-100)
+    return Math.min(100, timeBasedDifficulty + nameBasedDifficulty + userRatingScore);
+  };
+  
+  // Add points to the tree based on task completion
+  const addPoints = (points: number) => {
+    setTree(prev => {
+      const newPoints = prev.points + points;
+      
+      // Check if we should level up
+      let newLevel = prev.level;
+      while (newLevel < 20 && newPoints >= getLevelThreshold(newLevel)) {
+        newLevel++;
+      }
+      
+      // If leveled up
+      if (newLevel !== prev.level) {
+        toast.success(`Level up! You've reached level ${newLevel}!`);
+        
+        // Tree grows more with each level
+        const growthFactor = Math.min(10, newLevel);
+        return {
+          ...prev,
+          points: newPoints,
+          level: newLevel,
+          height: Math.min(100, prev.height + growthFactor),
+          leaves: Math.min(100, prev.leaves + growthFactor),
+          health: Math.min(100, prev.health + 5),
+          beauty: Math.min(100, prev.beauty + 5)
+        };
+      }
+      
+      return {
+        ...prev,
+        points: newPoints
+      };
+    });
+  };
 
   const applyTool = (tool: Tool) => {
     if (tool.used) {
@@ -178,12 +297,15 @@ export const TreeProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const resetTree = () => {
-    setTree(initialTreeState);
+    setTree({
+      ...initialTreeState,
+      lastReset: new Date().toISOString()
+    });
     toast.info("Tree has been reset");
   };
   
-  const getTreeTier = () => {
-    return tree.tier;
+  const getCurrentLevel = () => {
+    return tree.level;
   };
   
   const viewPastTree = (index: number) => {
@@ -201,11 +323,13 @@ export const TreeProvider = ({ children }: { children: ReactNode }) => {
       tree: galleryIndex >= 0 ? treeHistory[galleryIndex] : tree,
       applyTool, 
       resetTree,
-      getTreeTier,
+      getCurrentLevel,
       treeHistory,
       galleryIndex,
       viewPastTree,
-      viewLatestTree
+      viewLatestTree,
+      calculateTaskDifficulty,
+      addPoints
     }}>
       {children}
     </TreeContext.Provider>
