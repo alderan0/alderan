@@ -26,8 +26,8 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 const Index = () => {
   return (
-    <TaskProvider>
-      <TreeProvider>
+    <TreeProvider>
+      <TaskProvider>
         <Routes>
           <Route path="/" element={
             <ProtectedRoute>
@@ -40,8 +40,8 @@ const Index = () => {
             <Route path="community" element={<CommunityPage />} />
           </Route>
         </Routes>
-      </TreeProvider>
-    </TaskProvider>
+      </TaskProvider>
+    </TreeProvider>
   );
 };
 

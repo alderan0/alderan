@@ -450,7 +450,8 @@ const calculateTaskDifficulty = (name: string, notes: string, estimatedTime: num
 };
 
 export const TaskProvider = ({ children }: { children: ReactNode }) => {
-  const { calculateTaskDifficulty, addPoints, getCurrentLevel } = useTree();
+  const treeContext = useTree();
+  const { calculateTaskDifficulty, addPoints, getCurrentLevel } = treeContext;
   
   const [tasks, setTasks] = useState<Task[]>(() => {
     const saved = localStorage.getItem('tasks');
