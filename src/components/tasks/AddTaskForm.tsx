@@ -272,7 +272,7 @@ export const AddTaskForm = () => {
             <DialogTitle className="flex items-center justify-between">
               <span>Add New Task</span>
               <Button 
-                variant={isRecording ? "destructive" : "outline"} 
+                variant={isRecording ? "destructive" : "secondary"} 
                 size="sm"
                 className="h-8 w-8 p-0"
                 onClick={isRecording ? stopVoiceRecognition : startVoiceRecognition}
@@ -311,7 +311,7 @@ export const AddTaskForm = () => {
                       )}
                     </Button>
                   </div>
-                  <Alert variant="outline" className="bg-background">
+                  <Alert variant="default" className="bg-background">
                     <AlertDescription className="text-sm">{transcription}</AlertDescription>
                   </Alert>
                 </div>
@@ -460,7 +460,7 @@ export const AddTaskForm = () => {
       </Dialog>
       
       <Button 
-        variant="outline"
+        variant="secondary"
         className="fixed bottom-20 left-4 rounded-full h-14 w-14 shadow-lg bg-white"
         onClick={() => {
           setIsOpen(true);
