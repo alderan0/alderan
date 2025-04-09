@@ -1,9 +1,10 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useTasks } from "@/context/TaskContext";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Dialog,
   DialogContent,
@@ -12,16 +13,26 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus } from "lucide-react";
+import { Mic, MicOff, Plus, Sparkles, Brain, Coffee, Zap, Moon } from "lucide-react";
+import { toast } from "sonner";
 
 export const AddTaskForm = () => {
-  const { addTask } = useTasks();
+  const { addTask, currentMood } = useTasks();
   const [taskName, setTaskName] = useState("");
   const [deadlineDate, setDeadlineDate] = useState("");
   const [deadlineTime, setDeadlineTime] = useState("");
   const [estimatedHours, setEstimatedHours] = useState("");
   const [estimatedMinutes, setEstimatedMinutes] = useState("");
+  const [taskMood, setTaskMood] = useState(currentMood);
   const [isOpen, setIsOpen] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  
+  // Effect to set the current mood as default when the form opens
+  useEffect(() => {
+    if (isOpen) {
+      setTaskMood(currentMood);
+    }
+  }, [isOpen, currentMood]);
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,6 +54,7 @@ export const AddTaskForm = () => {
       name: taskName,
       deadline,
       estimatedTime: totalMinutes || 30, // Default to 30 minutes if not specified
+      mood: taskMood as any
     });
     
     // Reset form
@@ -54,86 +66,320 @@ export const AddTaskForm = () => {
     setIsOpen(false);
   };
   
+  // Voice input handling
+  const startVoiceRecognition = () => {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      toast.error("Your browser doesn't support speech recognition.");
+      return;
+    }
+    
+    setIsRecording(true);
+    
+    // Use the Web Speech API
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    
+    recognition.lang = 'en-US';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    
+    recognition.onresult = (event: any) => {
+      const speechResult = event.results[0][0].transcript;
+      processVoiceInput(speechResult);
+      setIsRecording(false);
+    };
+    
+    recognition.onerror = (event: any) => {
+      console.error('Speech recognition error', event.error);
+      toast.error("Couldn't understand. Please try again.");
+      setIsRecording(false);
+    };
+    
+    recognition.onend = () => {
+      setIsRecording(false);
+    };
+    
+    recognition.start();
+  };
+  
+  const stopVoiceRecognition = () => {
+    setIsRecording(false);
+  };
+  
+  // Process the voice input using simple pattern matching
+  const processVoiceInput = (input: string) => {
+    let taskText = input;
+    let deadline = "";
+    let mood = "";
+    
+    // Extract deadline with various patterns
+    const datePatterns = [
+      { regex: /by\s(tomorrow)/i, handler: () => {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        return tomorrow.toISOString().split('T')[0];
+      }},
+      { regex: /by\s(next\s\w+)/i, handler: (match: string) => {
+        const days = { monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6, sunday: 0 };
+        const today = new Date();
+        const dayOfWeek = today.getDay();
+        const targetDay = (match.toLowerCase().includes('monday') ? days.monday :
+                          match.toLowerCase().includes('tuesday') ? days.tuesday :
+                          match.toLowerCase().includes('wednesday') ? days.wednesday :
+                          match.toLowerCase().includes('thursday') ? days.thursday :
+                          match.toLowerCase().includes('friday') ? days.friday : 
+                          match.toLowerCase().includes('saturday') ? days.saturday : days.sunday);
+        
+        let daysToAdd = (7 - dayOfWeek + targetDay) % 7;
+        if (daysToAdd === 0) daysToAdd = 7; // Next week, not today
+        
+        const targetDate = new Date();
+        targetDate.setDate(today.getDate() + daysToAdd);
+        return targetDate.toISOString().split('T')[0];
+      }},
+      { regex: /by\s(today)/i, handler: () => {
+        return new Date().toISOString().split('T')[0];
+      }},
+      { regex: /by\s(this\s\w+)/i, handler: (match: string) => {
+        const days = { monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6, sunday: 0 };
+        const today = new Date();
+        const dayOfWeek = today.getDay();
+        const targetDay = (match.toLowerCase().includes('monday') ? days.monday :
+                          match.toLowerCase().includes('tuesday') ? days.tuesday :
+                          match.toLowerCase().includes('wednesday') ? days.wednesday :
+                          match.toLowerCase().includes('thursday') ? days.thursday :
+                          match.toLowerCase().includes('friday') ? days.friday : 
+                          match.toLowerCase().includes('saturday') ? days.saturday : days.sunday);
+        
+        let daysToAdd = (7 + targetDay - dayOfWeek) % 7;
+        
+        const targetDate = new Date();
+        targetDate.setDate(today.getDate() + daysToAdd);
+        return targetDate.toISOString().split('T')[0];
+      }}
+    ];
+    
+    // Try to extract the date
+    for (const pattern of datePatterns) {
+      const match = input.match(pattern.regex);
+      if (match) {
+        deadline = pattern.handler(match[1]);
+        taskText = taskText.replace(match[0], '');
+        break;
+      }
+    }
+    
+    // Extract mood
+    const moodPatterns = [
+      { regex: /(when|while|if)\s+i('m|'m|\s+am)?\s+(creative)/i, mood: "Creative" },
+      { regex: /(when|while|if)\s+i('m|'m|\s+am)?\s+(focused)/i, mood: "Focused" },
+      { regex: /(when|while|if)\s+i('m|'m|\s+am)?\s+(relaxed)/i, mood: "Relaxed" },
+      { regex: /(when|while|if)\s+i('m|'m|\s+am)?\s+(energetic|energized)/i, mood: "Energetic" },
+      { regex: /(when|while|if)\s+i('m|'m|\s+am)?\s+(tired)/i, mood: "Tired" },
+    ];
+    
+    for (const pattern of moodPatterns) {
+      if (input.match(pattern.regex)) {
+        mood = pattern.mood;
+        taskText = taskText.replace(pattern.regex, '');
+        break;
+      }
+    }
+    
+    // Clean up task text
+    taskText = taskText.replace(/^(add|create|make)(\s+a)?(\s+task)?/i, '');
+    taskText = taskText.trim().replace(/\.+$/, '');
+    taskText = taskText.charAt(0).toUpperCase() + taskText.slice(1);
+    
+    // Set form values
+    setTaskName(taskText);
+    
+    if (deadline) {
+      setDeadlineDate(deadline);
+    } else {
+      // Default to tomorrow if no date specified
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      setDeadlineDate(tomorrow.toISOString().split('T')[0]);
+    }
+    
+    if (mood) {
+      setTaskMood(mood);
+    }
+    
+    // Provide feedback
+    toast.success("Voice input processed!");
+  };
+  
   // Get today's date in YYYY-MM-DD format for min attribute
   const today = new Date().toISOString().split('T')[0];
   
+  const getMoodIcon = (mood: string) => {
+    switch (mood) {
+      case "Creative": return <Sparkles size={16} className="mr-2 text-purple-500" />;
+      case "Focused": return <Brain size={16} className="mr-2 text-blue-500" />;
+      case "Relaxed": return <Coffee size={16} className="mr-2 text-green-500" />;
+      case "Energetic": return <Zap size={16} className="mr-2 text-amber-500" />;
+      case "Tired": return <Moon size={16} className="mr-2 text-gray-500" />;
+      default: return null;
+    }
+  };
+  
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button className="fixed bottom-20 right-4 rounded-full h-14 w-14 shadow-lg">
-          <Plus size={24} />
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Add New Task</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4 pt-4">
-          <div className="space-y-2">
-            <Label htmlFor="taskName">Task Name</Label>
-            <Input
-              id="taskName"
-              value={taskName}
-              onChange={(e) => setTaskName(e.target.value)}
-              placeholder="What do you need to do?"
-              required
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="deadline">Deadline Date</Label>
-            <Input
-              id="deadline"
-              type="date"
-              value={deadlineDate}
-              min={today}
-              onChange={(e) => setDeadlineDate(e.target.value)}
-              required
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="deadlineTime">Deadline Time (Optional)</Label>
-            <Input
-              id="deadlineTime"
-              type="time"
-              value={deadlineTime}
-              onChange={(e) => setDeadlineTime(e.target.value)}
-            />
-          </div>
-          
-          <div className="space-y-2">
-            <Label>Estimated Time</Label>
-            <div className="flex gap-2">
-              <div className="flex-1">
-                <Input
-                  id="estimatedHours"
-                  type="number"
-                  min="0"
-                  value={estimatedHours}
-                  onChange={(e) => setEstimatedHours(e.target.value)}
-                  placeholder="Hours"
-                />
+    <>
+      {/* Main "Add Task" button */}
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogTrigger asChild>
+          <Button className="fixed bottom-20 right-4 rounded-full h-14 w-14 shadow-lg">
+            <Plus size={24} />
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-between">
+              <span>Add New Task</span>
+              <Button 
+                variant={isRecording ? "destructive" : "outline"} 
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={isRecording ? stopVoiceRecognition : startVoiceRecognition}
+              >
+                {isRecording ? <MicOff size={16} /> : <Mic size={16} />}
+              </Button>
+            </DialogTitle>
+            {isRecording && (
+              <div className="text-sm text-center mt-2 animate-pulse text-red-500">
+                Listening... speak your task
               </div>
-              <div className="flex-1">
-                <Input
-                  id="estimatedMinutes"
-                  type="number"
-                  min="0"
-                  max="59"
-                  value={estimatedMinutes}
-                  onChange={(e) => setEstimatedMinutes(e.target.value)}
-                  placeholder="Minutes"
-                />
+            )}
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <Label htmlFor="taskName">Task Name</Label>
+              <Input
+                id="taskName"
+                value={taskName}
+                onChange={(e) => setTaskName(e.target.value)}
+                placeholder="What do you need to do?"
+                required
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="mood">Mood</Label>
+              <Select
+                value={taskMood}
+                onValueChange={setTaskMood}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a mood" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem value="Creative" className="flex items-center">
+                      <div className="flex items-center">
+                        <Sparkles size={16} className="mr-2 text-purple-500" /> 
+                        Creative
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="Focused">
+                      <div className="flex items-center">
+                        <Brain size={16} className="mr-2 text-blue-500" /> 
+                        Focused
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="Relaxed">
+                      <div className="flex items-center">
+                        <Coffee size={16} className="mr-2 text-green-500" /> 
+                        Relaxed
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="Energetic">
+                      <div className="flex items-center">
+                        <Zap size={16} className="mr-2 text-amber-500" /> 
+                        Energetic
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="Tired">
+                      <div className="flex items-center">
+                        <Moon size={16} className="mr-2 text-gray-500" /> 
+                        Tired
+                      </div>
+                    </SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="deadline">Deadline Date</Label>
+              <Input
+                id="deadline"
+                type="date"
+                value={deadlineDate}
+                min={today}
+                onChange={(e) => setDeadlineDate(e.target.value)}
+                required
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="deadlineTime">Deadline Time (Optional)</Label>
+              <Input
+                id="deadlineTime"
+                type="time"
+                value={deadlineTime}
+                onChange={(e) => setDeadlineTime(e.target.value)}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Estimated Time</Label>
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <Input
+                    id="estimatedHours"
+                    type="number"
+                    min="0"
+                    value={estimatedHours}
+                    onChange={(e) => setEstimatedHours(e.target.value)}
+                    placeholder="Hours"
+                  />
+                </div>
+                <div className="flex-1">
+                  <Input
+                    id="estimatedMinutes"
+                    type="number"
+                    min="0"
+                    max="59"
+                    value={estimatedMinutes}
+                    onChange={(e) => setEstimatedMinutes(e.target.value)}
+                    placeholder="Minutes"
+                  />
+                </div>
               </div>
             </div>
-          </div>
-          
-          <DialogFooter>
-            <Button type="submit" className="w-full">Add Task</Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+            
+            <DialogFooter>
+              <Button type="submit" className="w-full">Add Task</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Floating voice button */}
+      <Button 
+        variant="outline"
+        className="fixed bottom-20 left-4 rounded-full h-14 w-14 shadow-lg bg-white"
+        onClick={() => {
+          setIsOpen(true);
+          setTimeout(() => {
+            startVoiceRecognition();
+          }, 500);
+        }}
+      >
+        <Mic size={24} className="text-alderan-blue" />
+      </Button>
+    </>
   );
 };
