@@ -30,7 +30,7 @@ export const AddTaskForm = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [transcription, setTranscription] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
-  const [selectedProjectId, setSelectedProjectId] = useState("");
+  const [selectedProjectId, setSelectedProjectId] = useState("none");
   
   useEffect(() => {
     if (isOpen) {
@@ -57,7 +57,7 @@ export const AddTaskForm = () => {
       deadline,
       estimatedTime: totalMinutes || 30,
       mood: taskMood as any,
-      projectId: selectedProjectId || undefined
+      projectId: selectedProjectId === "none" ? undefined : selectedProjectId
     });
     
     setTaskName("");
@@ -65,7 +65,7 @@ export const AddTaskForm = () => {
     setDeadlineTime("");
     setEstimatedHours("");
     setEstimatedMinutes("");
-    setSelectedProjectId("");
+    setSelectedProjectId("none");
     setIsOpen(false);
   };
   
@@ -343,7 +343,7 @@ export const AddTaskForm = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    <SelectItem value="">No Project</SelectItem>
+                    <SelectItem value="none">No Project</SelectItem>
                     {projects.map(project => (
                       <SelectItem key={project.id} value={project.id}>
                         <div className="flex items-center">
