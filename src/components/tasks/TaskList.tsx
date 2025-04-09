@@ -4,7 +4,7 @@ import { Task, useTasks } from "@/context/TaskContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Check, Clock, Trash } from "lucide-react";
+import { Check, Clock, Trash, Brain, Sparkles, Coffee, Zap, Moon } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import {
   Dialog,
@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export const TaskList = () => {
-  const { tasks, completeTask, deleteTask } = useTasks();
+  const { tasks, completeTask, deleteTask, currentMood } = useTasks();
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [completionMinutes, setCompletionMinutes] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -61,13 +61,36 @@ export const TaskList = () => {
     return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
   };
   
+  // Get mood icon
+  const getMoodIcon = (mood?: string) => {
+    switch (mood) {
+      case "Creative": return <Sparkles size={16} className="mr-1 text-purple-500" />;
+      case "Focused": return <Brain size={16} className="mr-1 text-blue-500" />;
+      case "Relaxed": return <Coffee size={16} className="mr-1 text-green-500" />;
+      case "Energetic": return <Zap size={16} className="mr-1 text-amber-500" />;
+      case "Tired": return <Moon size={16} className="mr-1 text-gray-500" />;
+      default: return null;
+    }
+  };
+  
+  // Get a style modifier if the task mood matches the current mood
+  const getMoodMatchStyle = (task: Task) => {
+    if (task.mood && task.mood === currentMood) {
+      return "border-l-4 border-l-purple-500";
+    }
+    return "";
+  };
+  
   return (
     <div className="space-y-6">
       {/* Incomplete tasks */}
       {incompleteTasks.length > 0 ? (
         <div className="grid gap-4">
           {incompleteTasks.map(task => (
-            <Card key={task.id}>
+            <Card 
+              key={task.id}
+              className={`transition-all hover:shadow-md ${getMoodMatchStyle(task)}`}
+            >
               <CardHeader className="py-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg font-medium">{task.name}</CardTitle>
@@ -83,6 +106,21 @@ export const TaskList = () => {
                   <span>Due {formatDeadline(task.deadline)}</span>
                   <span className="mx-2">•</span>
                   <span>{getEstimatedTimeText(task.estimatedTime)}</span>
+                  
+                  {task.mood && (
+                    <>
+                      <span className="mx-2">•</span>
+                      <div className="flex items-center">
+                        {getMoodIcon(task.mood)}
+                        <span>{task.mood}</span>
+                        {task.mood === currentMood && (
+                          <Badge variant="outline" className="ml-1 text-[10px] py-0 h-4 bg-purple-100 text-purple-800 border-purple-300">
+                            Matching Vibe
+                          </Badge>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </div>
               </CardContent>
               <CardFooter className="pt-1 pb-3 flex justify-between">
@@ -99,6 +137,9 @@ export const TaskList = () => {
                   variant="default" 
                   size="sm" 
                   onClick={() => handleCompleteClick(task)}
+                  className={task.mood === currentMood ? 
+                    "bg-gradient-to-r from-purple-500 to-blue-500" : 
+                    ""}
                 >
                   <Check size={16} className="mr-1" />
                   Complete
@@ -122,6 +163,11 @@ export const TaskList = () => {
               <div key={task.id} className="flex items-center px-3 py-2 rounded-md bg-muted">
                 <Check size={16} className="mr-2 text-green-500" />
                 <span className="text-muted-foreground line-through">{task.name}</span>
+                {task.mood && (
+                  <div className="ml-2 flex items-center">
+                    {getMoodIcon(task.mood)}
+                  </div>
+                )}
                 {task.actualTime && (
                   <Badge variant="outline" className="ml-auto">
                     {getEstimatedTimeText(task.actualTime)}
