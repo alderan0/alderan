@@ -1,36 +1,16 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { 
-  ArrowRight, 
-  CheckCircle, 
-  ChevronDown,
-  Leaf, 
-  Calendar, 
-  Users, 
-  Globe,
-  Heart,
-  TreePine,
-  Medal,
-  MessageSquare,
-  Mail,
-  Sparkles
-} from "lucide-react";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger
-} from "@/components/ui/accordion";
+import { ArrowRight, CheckCircle, ChevronDown, Leaf, Calendar, Users, Globe, Heart, TreePine, Medal, MessageSquare, Mail, Sparkles } from "lucide-react";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Card, CardContent } from "@/components/ui/card";
 import { LandingNavbar } from "@/components/landing/LandingNavbar";
 import { useAuth } from "@/context/AuthContext";
-
 const LandingPage = () => {
-  const { isAuthenticated } = useAuth();
-  
-  return (
-    <div className="min-h-screen">
+  const {
+    isAuthenticated
+  } = useAuth();
+  return <div className="min-h-screen">
       <LandingNavbar />
       
       {/* Hero Section */}
@@ -46,9 +26,7 @@ const LandingPage = () => {
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight animate-float">
               Grow Your Impact, One Task at a Time
             </h1>
-            <p className="text-lg md:text-xl opacity-90">
-              Alderan turns your eco-friendly habits into a virtual tree that grows with every sustainable action you take.
-            </p>
+            <p className="text-lg md:text-xl opacity-90">Alderan turns your day to day tasks into a virtual tree that grows with every action you take.</p>
             <div className="flex flex-col sm:flex-row gap-4 pt-4">
               <Button size="lg" className="bg-white text-alderan-green-dark hover:bg-white/90 rounded-full group transform transition-all hover:scale-105">
                 <Link to={isAuthenticated ? "/app" : "/auth"} className="flex items-center gap-2">
@@ -583,11 +561,7 @@ const LandingPage = () => {
           
           <div className="border-t border-border pt-8 flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center gap-2 mb-4 md:mb-0">
-              <img 
-                src="/lovable-uploads/e14b38a8-ba30-4f3a-9853-8b7ec0bb6fc7.png" 
-                alt="Alderan Logo" 
-                className="h-8 w-8" 
-              />
+              <img src="/lovable-uploads/e14b38a8-ba30-4f3a-9853-8b7ec0bb6fc7.png" alt="Alderan Logo" className="h-8 w-8" />
               <span className="font-semibold text-lg">Alderan</span>
             </div>
             
@@ -597,8 +571,6 @@ const LandingPage = () => {
           </div>
         </div>
       </footer>
-    </div>
-  );
+    </div>;
 };
-
 export default LandingPage;
