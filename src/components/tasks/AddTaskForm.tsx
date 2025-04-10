@@ -27,7 +27,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent } from "@/components/ui/card";
 
 export const AddTaskForm = () => {
-  const { addTask, currentMood, projects, addProject, addSubtask } = useTasks();
+  const { addTask, currentMood, projects, addProject, addSubtask, tasks } = useTasks();
   const [taskName, setTaskName] = useState("");
   const [deadlineDate, setDeadlineDate] = useState("");
   const [deadlineTime, setDeadlineTime] = useState("");

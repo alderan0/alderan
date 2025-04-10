@@ -1,12 +1,47 @@
+
 import { useState } from "react";
-import { useTasks } from "@/context/TaskContext";
+import { useTasks, Task } from "@/context/TaskContext";
 import { TaskDeleteDialog } from "./TaskDeleteDialog";
+import { formatDistanceToNow } from "date-fns";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import {
+  Check,
+  Trash,
+  BarChart2,
+  Clock,
+  Sparkles,
+  Brain,
+  Coffee,
+  Zap,
+  Moon
+} from "lucide-react";
 
 export const TaskList = () => {
-  const { tasks } = useTasks();
+  const { tasks, currentMood, completeTask, setTaskDifficulty } = useTasks();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState("");
   const [selectedTaskName, setSelectedTaskName] = useState("");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [difficultyDialogOpen, setDifficultyDialogOpen] = useState(false);
+  const [completionMinutes, setCompletionMinutes] = useState("");
 
   const completedToday = tasks.filter(task => {
     if (!task.completed || !task.completedAt) return false;
@@ -41,7 +76,7 @@ export const TaskList = () => {
   const handleDifficultySet = (difficulty: "easy" | "medium" | "hard") => {
     if (selectedTaskId) {
       setTaskDifficulty(selectedTaskId, difficulty);
-      setSelectedTaskId(null);
+      setSelectedTaskId("");
       setDifficultyDialogOpen(false);
     }
   };
@@ -49,7 +84,7 @@ export const TaskList = () => {
   const handleCompleteSubmit = () => {
     if (selectedTaskId) {
       completeTask(selectedTaskId, parseInt(completionMinutes) || 0);
-      setSelectedTaskId(null);
+      setSelectedTaskId("");
       setCompletionMinutes("");
       setIsDialogOpen(false);
     }
