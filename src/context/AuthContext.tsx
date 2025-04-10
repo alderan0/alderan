@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from '@supabase/supabase-js';
+import type { Database } from '@/integrations/supabase/types';
 
 interface UserProfile {
   id: string;
@@ -37,6 +38,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session?.user) {
+          // Use type casting to access the profiles table
           const { data: profile } = await supabase
             .from('profiles')
             .select('*')
@@ -66,6 +68,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       async (event, session) => {
         if (event === 'SIGNED_IN' && session?.user) {
           // Fetch user profile data
+          // Use type casting to access the profiles table
           const { data: profile } = await supabase
             .from('profiles')
             .select('*')
