@@ -9,7 +9,275 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      habits: {
+        Row: {
+          created_at: string
+          id: string
+          last_completed: string | null
+          name: string
+          streak: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_completed?: string | null
+          name: string
+          streak?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_completed?: string | null
+          name?: string
+          streak?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          id: string
+          updated_at: string
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          id: string
+          updated_at?: string
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          id?: string
+          updated_at?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
+      project_tasks: {
+        Row: {
+          completed: boolean | null
+          created_at: string
+          deadline_date: string | null
+          deadline_time: string | null
+          description: string | null
+          difficulty: number | null
+          estimated_time: number | null
+          id: string
+          mood: string | null
+          project_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          completed?: boolean | null
+          created_at?: string
+          deadline_date?: string | null
+          deadline_time?: string | null
+          description?: string | null
+          difficulty?: number | null
+          estimated_time?: number | null
+          id?: string
+          mood?: string | null
+          project_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          completed?: boolean | null
+          created_at?: string
+          deadline_date?: string | null
+          deadline_time?: string | null
+          description?: string | null
+          difficulty?: number | null
+          estimated_time?: number | null
+          id?: string
+          mood?: string | null
+          project_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_tasks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projects: {
+        Row: {
+          completed: boolean | null
+          created_at: string
+          deadline_date: string | null
+          deadline_time: string | null
+          description: string | null
+          difficulty: number | null
+          estimated_time: number | null
+          id: string
+          mood: string | null
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean | null
+          created_at?: string
+          deadline_date?: string | null
+          deadline_time?: string | null
+          description?: string | null
+          difficulty?: number | null
+          estimated_time?: number | null
+          id?: string
+          mood?: string | null
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean | null
+          created_at?: string
+          deadline_date?: string | null
+          deadline_time?: string | null
+          description?: string | null
+          difficulty?: number | null
+          estimated_time?: number | null
+          id?: string
+          mood?: string | null
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      tasks: {
+        Row: {
+          ai_difficulty: number | null
+          completed: boolean | null
+          created_at: string
+          deadline_date: string | null
+          deadline_time: string | null
+          description: string | null
+          difficulty: number | null
+          estimated_time: number | null
+          id: string
+          mood: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_difficulty?: number | null
+          completed?: boolean | null
+          created_at?: string
+          deadline_date?: string | null
+          deadline_time?: string | null
+          description?: string | null
+          difficulty?: number | null
+          estimated_time?: number | null
+          id?: string
+          mood?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_difficulty?: number | null
+          completed?: boolean | null
+          created_at?: string
+          deadline_date?: string | null
+          deadline_time?: string | null
+          description?: string | null
+          difficulty?: number | null
+          estimated_time?: number | null
+          id?: string
+          mood?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      tools: {
+        Row: {
+          acquired_at: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          tool_type: string
+          user_id: string
+        }
+        Insert: {
+          acquired_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          tool_type: string
+          user_id: string
+        }
+        Update: {
+          acquired_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          tool_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      trees: {
+        Row: {
+          created_at: string
+          growth_stage: string | null
+          height: number | null
+          id: string
+          leaves: number | null
+          level: number | null
+          level_status: string | null
+          points: number | null
+          tasks_completed: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          growth_stage?: string | null
+          height?: number | null
+          id?: string
+          leaves?: number | null
+          level?: number | null
+          level_status?: string | null
+          points?: number | null
+          tasks_completed?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          growth_stage?: string | null
+          height?: number | null
+          id?: string
+          leaves?: number | null
+          level?: number | null
+          level_status?: string | null
+          points?: number | null
+          tasks_completed?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

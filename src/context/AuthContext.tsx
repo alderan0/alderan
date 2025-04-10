@@ -2,67 +2,116 @@
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { User } from '@supabase/supabase-js';
 
-interface User {
+interface UserProfile {
   id: string;
   username: string;
   email: string;
+  avatar_url?: string;
 }
 
 interface AuthContextType {
-  user: User | null;
+  user: UserProfile | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   signup: (username: string, email: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
   // Check if user is already logged in
   useEffect(() => {
-    const checkAuth = () => {
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
-        try {
-          setUser(JSON.parse(storedUser));
-        } catch (e) {
-          localStorage.removeItem('user');
+    const checkAuth = async () => {
+      setIsLoading(true);
+      try {
+        // Get session from Supabase
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session?.user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+          
+          if (profile) {
+            setUser({
+              id: session.user.id,
+              username: profile.username || '',
+              email: session.user.email || '',
+              avatar_url: profile.avatar_url
+            });
+          }
         }
+      } catch (error) {
+        console.error('Error checking authentication status:', error);
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
 
     checkAuth();
+
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === 'SIGNED_IN' && session?.user) {
+          // Fetch user profile data
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+          
+          if (profile) {
+            setUser({
+              id: session.user.id,
+              username: profile.username || '',
+              email: session.user.email || '',
+              avatar_url: profile.avatar_url
+            });
+          }
+          setIsLoading(false);
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null);
+          setIsLoading(false);
+        }
+      }
+    );
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     try {
-      // For demo purposes, we'll just simulate a login
-      // In a real app, you'd make an API call here
-      if (email === "demo@example.com" && password === "password") {
-        const demoUser = {
-          id: "1",
-          username: "DemoUser",
-          email: "demo@example.com"
-        };
-        setUser(demoUser);
-        localStorage.setItem('user', JSON.stringify(demoUser));
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data.user) {
         toast.success("Welcome back!");
         navigate('/app');
-      } else {
-        toast.error("Invalid credentials");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login error:", error);
-      toast.error("Login failed. Please try again.");
+      toast.error(error.message || "Login failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -71,30 +120,41 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signup = async (username: string, email: string, password: string) => {
     setIsLoading(true);
     try {
-      // For demo purposes, we'll just simulate a signup
-      // In a real app, you'd make an API call here
-      const newUser = {
-        id: Math.random().toString(36).substring(2, 9),
-        username,
-        email
-      };
-      setUser(newUser);
-      localStorage.setItem('user', JSON.stringify(newUser));
-      toast.success("Account created successfully! Welcome to Alderan 🌱");
-      navigate('/app');  // Updated to redirect to /app after signup
-    } catch (error) {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            username
+          }
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data.user) {
+        toast.success("Account created successfully! Welcome to Alderan 🌱");
+        navigate('/app');
+      }
+    } catch (error: any) {
       console.error("Signup error:", error);
-      toast.error("Signup failed. Please try again.");
+      toast.error(error.message || "Signup failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('user');
-    setUser(null);
-    toast.info("You've been logged out");
-    navigate('/');  // Updated to redirect to landing page after logout
+  const logout = async () => {
+    try {
+      await supabase.auth.signOut();
+      toast.info("You've been logged out");
+      navigate('/');
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast.error("Logout failed. Please try again.");
+    }
   };
 
   return (
