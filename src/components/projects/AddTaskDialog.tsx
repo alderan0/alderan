@@ -26,6 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 
@@ -43,6 +44,7 @@ export const AddTaskDialog = ({ open, onOpenChange, projectId }: AddTaskDialogPr
   const [estimatedHours, setEstimatedHours] = useState("");
   const [estimatedMinutes, setEstimatedMinutes] = useState("");
   const [mood, setMood] = useState<"Creative" | "Focused" | "Relaxed" | "Energetic" | "Tired" | "">("");
+  const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard" | "">("");
   
   const handleSubmit = () => {
     if (!name.trim() || !date) return;
@@ -58,6 +60,7 @@ export const AddTaskDialog = ({ open, onOpenChange, projectId }: AddTaskDialogPr
       deadline: date,
       estimatedTime: totalMinutes || 30, // Default to 30 mins if not specified
       mood: mood as any || undefined,
+      userRating: difficulty as "easy" | "medium" | "hard" | undefined,
       projectId
     });
     
@@ -67,6 +70,7 @@ export const AddTaskDialog = ({ open, onOpenChange, projectId }: AddTaskDialogPr
     setEstimatedHours("");
     setEstimatedMinutes("");
     setMood("");
+    setDifficulty("");
     
     onOpenChange(false);
   };
@@ -198,6 +202,29 @@ export const AddTaskDialog = ({ open, onOpenChange, projectId }: AddTaskDialogPr
                 </SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          
+          {/* Task Difficulty Rating */}
+          <div className="grid gap-2">
+            <Label htmlFor="taskDifficulty">Task Difficulty (optional)</Label>
+            <RadioGroup 
+              value={difficulty} 
+              onValueChange={(value) => setDifficulty(value as "easy" | "medium" | "hard")}
+              className="flex justify-between pt-2"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="easy" id="dialog-easy" />
+                <Label htmlFor="dialog-easy" className="text-green-500">Easy</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="medium" id="dialog-medium" />
+                <Label htmlFor="dialog-medium" className="text-amber-500">Medium</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="hard" id="dialog-hard" />
+                <Label htmlFor="dialog-hard" className="text-red-500">Hard</Label>
+              </div>
+            </RadioGroup>
           </div>
         </div>
         <DialogFooter>

@@ -75,7 +75,7 @@ interface TaskContextType {
   tasks: Task[];
   addTask: (task: Omit<Task, "id" | "priority" | "completed" | "subtasks" | "difficulty">) => void;
   completeTask: (id: string, actualTime: number) => void;
-  deleteTask: (id: string) => void;
+  deleteTask: (id: string, useForTraining?: boolean) => void;
   prioritizeTasks: () => void;
   suggestedTasks: Task[];
   tools: Tool[];
@@ -685,7 +685,27 @@ export const TaskProvider = ({ children }: { children: ReactNode }) => {
     suggestHabit();
   };
 
-  const deleteTask = (id: string) => {
+  const deleteTask = (id: string, useForTraining = true) => {
+    if (useForTraining) {
+      const taskToDelete = tasks.find(task => task.id === id);
+      if (taskToDelete && taskToDelete.completed) {
+        const completedTime = taskToDelete.completedAt;
+        const mood = taskToDelete.mood;
+        const actualTime = taskToDelete.actualTime;
+        
+        console.log(`Training data from deleted task: ${taskToDelete.name}`, {
+          completedAt: completedTime,
+          mood: mood,
+          actualTime: actualTime,
+          difficulty: taskToDelete.difficulty
+        });
+        
+        if (taskToDelete.mood) {
+          // Use this data to refine mood-based suggestions
+        }
+      }
+    }
+    
     setTasks(prev => prev.filter(task => task.id !== id));
     toast.info("Task deleted");
   };

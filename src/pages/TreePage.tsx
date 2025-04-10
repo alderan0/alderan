@@ -1,5 +1,5 @@
 
-import { VirtualTree } from "@/components/tree/VirtualTree";
+import { PixelatedTree } from "@/components/tree/PixelatedTree";
 import { ToolsInventory } from "@/components/tree/ToolsInventory";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { TreeDeciduous, Award, Star, TrendingUp, Zap } from "lucide-react";
@@ -52,7 +52,8 @@ const TreePage = () => {
         </CardHeader>
         
         <CardContent className="space-y-6">
-          <VirtualTree />
+          {/* Replace VirtualTree with PixelatedTree */}
+          <PixelatedTree />
           
           <div className="space-y-2">
             <div className="flex justify-between items-center">

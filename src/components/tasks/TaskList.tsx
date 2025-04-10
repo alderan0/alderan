@@ -1,36 +1,30 @@
-
 import { useState } from "react";
-import { Task, useTasks } from "@/context/TaskContext";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Check, Clock, Trash, Brain, Sparkles, Coffee, Zap, Moon, BarChart2 } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { cn } from "@/lib/utils";
+import { useTasks } from "@/context/TaskContext";
+import { TaskDeleteDialog } from "./TaskDeleteDialog";
 
 export const TaskList = () => {
-  const { tasks, completeTask, deleteTask, currentMood, setTaskDifficulty } = useTasks();
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
-  const [completionMinutes, setCompletionMinutes] = useState("");
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [difficultyDialogOpen, setDifficultyDialogOpen] = useState(false);
-  
+  const { tasks } = useTasks();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedTaskId, setSelectedTaskId] = useState("");
+  const [selectedTaskName, setSelectedTaskName] = useState("");
+
+  const completedToday = tasks.filter(task => {
+    if (!task.completed || !task.completedAt) return false;
+    const today = new Date();
+    const completedDate = new Date(task.completedAt);
+    return (
+      completedDate.getDate() === today.getDate() &&
+      completedDate.getMonth() === today.getMonth() &&
+      completedDate.getFullYear() === today.getFullYear()
+    );
+  });
+
+  const handleDeleteTask = (id: string, name: string) => {
+    setSelectedTaskId(id);
+    setSelectedTaskName(name);
+    setDeleteDialogOpen(true);
+  };
+
   const incompleteTasks = tasks.filter(task => !task.completed);
   const completedTasks = tasks.filter(task => task.completed);
   
@@ -65,7 +59,6 @@ export const TaskList = () => {
     return formatDistanceToNow(deadline, { addSuffix: true });
   };
   
-  // Convert priority (0-100) to a color
   const getPriorityColor = (priority: number) => {
     if (priority >= 80) return "bg-red-500";
     if (priority >= 60) return "bg-orange-500";
@@ -74,7 +67,6 @@ export const TaskList = () => {
     return "bg-green-500";
   };
   
-  // Get difficulty badge style
   const getDifficultyBadge = (difficulty?: number) => {
     if (!difficulty) return { text: "Not rated", class: "bg-gray-500" };
     
@@ -94,7 +86,6 @@ export const TaskList = () => {
     return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
   };
   
-  // Get mood icon
   const getMoodIcon = (mood?: string) => {
     switch (mood) {
       case "Creative": return <Sparkles size={16} className="mr-1 text-purple-500" />;
@@ -106,7 +97,6 @@ export const TaskList = () => {
     }
   };
   
-  // Get a style modifier if the task mood matches the current mood
   const getMoodMatchStyle = (task: Task) => {
     if (task.mood && task.mood === currentMood) {
       return "border-l-4 border-l-purple-500";
@@ -116,7 +106,6 @@ export const TaskList = () => {
   
   return (
     <div className="space-y-6">
-      {/* Incomplete tasks */}
       {incompleteTasks.length > 0 ? (
         <div className="grid gap-4">
           {incompleteTasks.map(task => {
@@ -174,7 +163,7 @@ export const TaskList = () => {
                     <Button 
                       variant="outline" 
                       size="sm" 
-                      onClick={() => deleteTask(task.id)}
+                      onClick={() => handleDeleteTask(task.id, task.name)}
                       className="text-muted-foreground"
                     >
                       <Trash size={16} className="mr-1" />
@@ -211,7 +200,6 @@ export const TaskList = () => {
         </div>
       )}
       
-      {/* Completed tasks (if any) */}
       {completedTasks.length > 0 && (
         <div className="mt-8">
           <h2 className="text-xl font-semibold mb-4">Completed Tasks</h2>
@@ -248,7 +236,6 @@ export const TaskList = () => {
         </div>
       )}
       
-      {/* Complete task dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
@@ -274,7 +261,6 @@ export const TaskList = () => {
         </DialogContent>
       </Dialog>
       
-      {/* Rate difficulty dialog */}
       <Dialog open={difficultyDialogOpen} onOpenChange={setDifficultyDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
@@ -311,6 +297,13 @@ export const TaskList = () => {
           </div>
         </DialogContent>
       </Dialog>
+      
+      <TaskDeleteDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        taskId={selectedTaskId}
+        taskName={selectedTaskName}
+      />
     </div>
   );
 };

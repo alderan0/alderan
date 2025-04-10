@@ -10,7 +10,7 @@ import { useTasks } from "@/context/TaskContext";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { AIScheduleRecommendations } from "@/components/tasks/AIScheduleRecommendations";
 import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const TasksPage = () => {
@@ -18,7 +18,8 @@ const TasksPage = () => {
   const isMobile = useIsMobile();
   
   // Get active projects count
-  const activeProjectsCount = projects.filter(p => !p.completed).length;
+  const activeProjects = projects.filter(p => !p.completed);
+  const activeProjectsCount = activeProjects.length;
   
   return (
     <div className="pb-24 space-y-6">
@@ -45,21 +46,34 @@ const TasksPage = () => {
                 <Calendar className="mr-2 h-5 w-5 text-purple-500" />
                 Productivity Insights
               </CardTitle>
-              <Link to="/app/projects">
-                <Button variant="ghost" size="sm" className={`h-8 gap-2 ${isMobile ? 'text-xs p-2' : ''}`}>
-                  <FolderKanban size={14} />
+              
+              {/* Project indicator instead of button */}
+              <div className="flex items-center">
+                <FolderKanban size={14} className="mr-1 text-blue-500" />
+                <span className="text-sm">
                   {activeProjectsCount > 0 ? (
-                    <>
-                      {isMobile ? 'Projects' : `${activeProjectsCount} Active Projects`}
-                    </>
+                    <>{activeProjectsCount} Active Project{activeProjectsCount !== 1 ? 's' : ''}</>
                   ) : (
-                    <>Create Project</>
+                    <>No Projects</>
                   )}
-                </Button>
-              </Link>
+                </span>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Display active project names */}
+            {activeProjectsCount > 0 && (
+              <div className="space-y-2 mb-3">
+                <h4 className="text-sm font-medium">Active Projects</h4>
+                <div className="flex flex-wrap gap-2">
+                  {activeProjects.map(project => (
+                    <Badge key={project.id} variant="outline" className="bg-blue-50/50">
+                      {project.name}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
             <HabitTracker />
           </CardContent>
         </Card>

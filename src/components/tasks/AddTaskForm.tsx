@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useTasks } from "@/context/TaskContext";
@@ -13,13 +12,22 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Mic, MicOff, Plus, Sparkles, Brain, Coffee, Zap, Moon, FolderKanban, Loader2 } from "lucide-react";
+import { 
+  Sheet,
+  SheetContent, 
+  SheetHeader, 
+  SheetTitle, 
+  SheetDescription,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Mic, MicOff, Plus, Sparkles, Brain, Coffee, Zap, Moon, FolderKanban, Loader2, CheckCircle, CirclePlus, CircleDashed } from "lucide-react";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent } from "@/components/ui/card";
 
 export const AddTaskForm = () => {
-  const { addTask, currentMood, projects } = useTasks();
+  const { addTask, currentMood, projects, addProject, addSubtask } = useTasks();
   const [taskName, setTaskName] = useState("");
   const [deadlineDate, setDeadlineDate] = useState("");
   const [deadlineTime, setDeadlineTime] = useState("");
@@ -31,6 +39,15 @@ export const AddTaskForm = () => {
   const [transcription, setTranscription] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState("none");
+  const [taskDifficulty, setTaskDifficulty] = useState<"easy" | "medium" | "hard" | "">("");
+  const [formType, setFormType] = useState<"task" | "subtask" | "project">("task");
+  const [projectName, setProjectName] = useState("");
+  const [projectDescription, setProjectDescription] = useState("");
+  const [projectDeadline, setProjectDeadline] = useState("");
+  const [selectedTaskId, setSelectedTaskId] = useState("");
+  const [subtaskName, setSubtaskName] = useState("");
+  
+  const [isTypeSelectionOpen, setIsTypeSelectionOpen] = useState(false);
   
   useEffect(() => {
     if (isOpen) {
@@ -38,35 +55,70 @@ export const AddTaskForm = () => {
     }
   }, [isOpen, currentMood]);
   
+  useEffect(() => {
+    if (formType === "task") {
+      setTaskName("");
+      setDeadlineDate("");
+      setDeadlineTime("");
+      setEstimatedHours("");
+      setEstimatedMinutes("");
+      setSelectedProjectId("none");
+      setTaskDifficulty("");
+    } else if (formType === "subtask") {
+      setSubtaskName("");
+      setSelectedTaskId("");
+    } else if (formType === "project") {
+      setProjectName("");
+      setProjectDescription("");
+      setProjectDeadline("");
+    }
+  }, [formType]);
+  
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!taskName || !deadlineDate) {
-      return;
+    if (formType === "task") {
+      if (!taskName || !deadlineDate) {
+        return;
+      }
+      
+      const dateString = `${deadlineDate}${deadlineTime ? 'T' + deadlineTime : 'T23:59'}`;
+      const deadline = new Date(dateString);
+      
+      const hours = parseInt(estimatedHours) || 0;
+      const minutes = parseInt(estimatedMinutes) || 0;
+      const totalMinutes = (hours * 60) + minutes;
+      
+      addTask({
+        name: taskName,
+        deadline,
+        estimatedTime: totalMinutes || 30,
+        mood: taskMood as any,
+        projectId: selectedProjectId === "none" ? undefined : selectedProjectId,
+        userRating: taskDifficulty as any || undefined
+      });
+      
+    } else if (formType === "subtask") {
+      if (!subtaskName || !selectedTaskId) {
+        return;
+      }
+      
+      addSubtask(selectedTaskId, subtaskName);
+      
+    } else if (formType === "project") {
+      if (!projectName) {
+        return;
+      }
+      
+      addProject({
+        name: projectName,
+        description: projectDescription,
+        deadline: projectDeadline ? new Date(projectDeadline) : undefined,
+      });
     }
     
-    const dateString = `${deadlineDate}${deadlineTime ? 'T' + deadlineTime : 'T23:59'}`;
-    const deadline = new Date(dateString);
-    
-    const hours = parseInt(estimatedHours) || 0;
-    const minutes = parseInt(estimatedMinutes) || 0;
-    const totalMinutes = (hours * 60) + minutes;
-    
-    addTask({
-      name: taskName,
-      deadline,
-      estimatedTime: totalMinutes || 30,
-      mood: taskMood as any,
-      projectId: selectedProjectId === "none" ? undefined : selectedProjectId
-    });
-    
-    setTaskName("");
-    setDeadlineDate("");
-    setDeadlineTime("");
-    setEstimatedHours("");
-    setEstimatedMinutes("");
-    setSelectedProjectId("none");
     setIsOpen(false);
+    setIsTypeSelectionOpen(false);
   };
   
   const startVoiceRecognition = () => {
@@ -114,7 +166,6 @@ export const AddTaskForm = () => {
     setIsProcessing(true);
     
     try {
-      // Simulate AI processing with a timeout
       setTimeout(() => {
         const processedInput = processVoiceInput(transcription);
         setIsProcessing(false);
@@ -203,20 +254,32 @@ export const AddTaskForm = () => {
       }
     }
     
-    // Check for project reference
     const projectPattern = /for\s+project\s+["']?([^"']+)["']?/i;
     const projectMatch = input.match(projectPattern);
     if (projectMatch) {
       projectName = projectMatch[1].trim();
       taskText = taskText.replace(projectPattern, '');
       
-      // Find matching project
       const matchingProject = projects.find(p => 
         p.name.toLowerCase().includes(projectName.toLowerCase())
       );
       
       if (matchingProject) {
         setSelectedProjectId(matchingProject.id);
+      }
+    }
+    
+    const difficultyPatterns = [
+      { regex: /(this is|it's|its|it is)\s+(easy|simple)/i, difficulty: "easy" },
+      { regex: /(this is|it's|its|it is)\s+(medium|moderate)/i, difficulty: "medium" },
+      { regex: /(this is|it's|its|it is)\s+(hard|difficult|challenging)/i, difficulty: "hard" },
+    ];
+    
+    for (const pattern of difficultyPatterns) {
+      if (input.match(pattern.regex)) {
+        setTaskDifficulty(pattern.difficulty as "easy" | "medium" | "hard");
+        taskText = taskText.replace(pattern.regex, '');
+        break;
       }
     }
     
@@ -258,27 +321,310 @@ export const AddTaskForm = () => {
       default: return null;
     }
   };
+
+  const handleTypeSelection = (type: "task" | "subtask" | "project") => {
+    setFormType(type);
+    setIsTypeSelectionOpen(false);
+    setIsOpen(true);
+  };
+  
+  const renderTaskForm = () => (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="taskName">Task Name</Label>
+        <Input
+          id="taskName"
+          value={taskName}
+          onChange={(e) => setTaskName(e.target.value)}
+          placeholder="What do you need to do?"
+          required
+        />
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="project">Project (Optional)</Label>
+        <Select
+          value={selectedProjectId}
+          onValueChange={setSelectedProjectId}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="No Project" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectItem value="none">No Project</SelectItem>
+              {projects.map(project => (
+                <SelectItem key={project.id} value={project.id}>
+                  <div className="flex items-center">
+                    <FolderKanban className="h-4 w-4 mr-2 text-blue-500" />
+                    {project.name}
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="mood">Mood</Label>
+        <Select
+          value={taskMood}
+          onValueChange={setTaskMood}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select a mood" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectItem value="Creative" className="flex items-center">
+                <div className="flex items-center">
+                  <Sparkles size={16} className="mr-2 text-purple-500" /> 
+                  Creative
+                </div>
+              </SelectItem>
+              <SelectItem value="Focused">
+                <div className="flex items-center">
+                  <Brain size={16} className="mr-2 text-blue-500" /> 
+                  Focused
+                </div>
+              </SelectItem>
+              <SelectItem value="Relaxed">
+                <div className="flex items-center">
+                  <Coffee size={16} className="mr-2 text-green-500" /> 
+                  Relaxed
+                </div>
+              </SelectItem>
+              <SelectItem value="Energetic">
+                <div className="flex items-center">
+                  <Zap size={16} className="mr-2 text-amber-500" /> 
+                  Energetic
+                </div>
+              </SelectItem>
+              <SelectItem value="Tired">
+                <div className="flex items-center">
+                  <Moon size={16} className="mr-2 text-gray-500" /> 
+                  Tired
+                </div>
+              </SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="deadline">Deadline Date</Label>
+        <Input
+          id="deadline"
+          type="date"
+          value={deadlineDate}
+          min={today}
+          onChange={(e) => setDeadlineDate(e.target.value)}
+          required
+        />
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="deadlineTime">Deadline Time (Optional)</Label>
+        <Input
+          id="deadlineTime"
+          type="time"
+          value={deadlineTime}
+          onChange={(e) => setDeadlineTime(e.target.value)}
+        />
+      </div>
+      
+      <div className="space-y-2">
+        <Label>Estimated Time</Label>
+        <div className="flex gap-2">
+          <div className="flex-1">
+            <Input
+              id="estimatedHours"
+              type="number"
+              min="0"
+              value={estimatedHours}
+              onChange={(e) => setEstimatedHours(e.target.value)}
+              placeholder="Hours"
+            />
+          </div>
+          <div className="flex-1">
+            <Input
+              id="estimatedMinutes"
+              type="number"
+              min="0"
+              max="59"
+              value={estimatedMinutes}
+              onChange={(e) => setEstimatedMinutes(e.target.value)}
+              placeholder="Minutes"
+            />
+          </div>
+        </div>
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="taskDifficulty">Task Difficulty</Label>
+        <RadioGroup 
+          value={taskDifficulty} 
+          onValueChange={(value) => setTaskDifficulty(value as "easy" | "medium" | "hard")}
+          className="flex justify-between pt-2"
+        >
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="easy" id="easy" />
+            <Label htmlFor="easy" className="text-green-500">Easy</Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="medium" id="medium" />
+            <Label htmlFor="medium" className="text-amber-500">Medium</Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="hard" id="hard" />
+            <Label htmlFor="hard" className="text-red-500">Hard</Label>
+          </div>
+        </RadioGroup>
+      </div>
+      
+      <DialogFooter>
+        <Button type="submit" className="w-full">Add Task</Button>
+      </DialogFooter>
+    </form>
+  );
+  
+  const renderSubtaskForm = () => (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="taskSelect">Parent Task</Label>
+        <Select
+          value={selectedTaskId}
+          onValueChange={setSelectedTaskId}
+          required
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select a task" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              {tasks.filter(task => !task.completed).map(task => (
+                <SelectItem key={task.id} value={task.id}>
+                  {task.name}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="subtaskName">Subtask Name</Label>
+        <Input
+          id="subtaskName"
+          value={subtaskName}
+          onChange={(e) => setSubtaskName(e.target.value)}
+          placeholder="Enter subtask name"
+          required
+        />
+      </div>
+      
+      <DialogFooter>
+        <Button type="submit" className="w-full">Add Subtask</Button>
+      </DialogFooter>
+    </form>
+  );
+  
+  const renderProjectForm = () => (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="projectName">Project Name</Label>
+        <Input
+          id="projectName"
+          value={projectName}
+          onChange={(e) => setProjectName(e.target.value)}
+          placeholder="Enter project name"
+          required
+        />
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="projectDescription">Description (Optional)</Label>
+        <Input
+          id="projectDescription"
+          value={projectDescription}
+          onChange={(e) => setProjectDescription(e.target.value)}
+          placeholder="Brief description of the project"
+        />
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="projectDeadline">Deadline (Optional)</Label>
+        <Input
+          id="projectDeadline"
+          type="date"
+          value={projectDeadline}
+          min={today}
+          onChange={(e) => setProjectDeadline(e.target.value)}
+        />
+      </div>
+      
+      <DialogFooter>
+        <Button type="submit" className="w-full">Create Project</Button>
+      </DialogFooter>
+    </form>
+  );
   
   return (
     <>
+      <Dialog open={isTypeSelectionOpen} onOpenChange={setIsTypeSelectionOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>What would you like to create?</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-3 gap-4 py-4">
+            <Button 
+              variant="outline" 
+              className="h-20 flex flex-col gap-2 items-center justify-center"
+              onClick={() => handleTypeSelection("task")}
+            >
+              <CheckCircle size={24} />
+              <span>Task</span>
+            </Button>
+            <Button 
+              variant="outline" 
+              className="h-20 flex flex-col gap-2 items-center justify-center"
+              onClick={() => handleTypeSelection("subtask")}
+            >
+              <CirclePlus size={24} />
+              <span>Subtask</span>
+            </Button>
+            <Button 
+              variant="outline" 
+              className="h-20 flex flex-col gap-2 items-center justify-center"
+              onClick={() => handleTypeSelection("project")}
+            >
+              <FolderKanban size={24} />
+              <span>Project</span>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+      
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogTrigger asChild>
-          <Button className="fixed bottom-20 right-4 rounded-full h-14 w-14 shadow-lg">
-            <Plus size={24} />
-          </Button>
-        </DialogTrigger>
         <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center justify-between">
-              <span>Add New Task</span>
-              <Button 
-                variant={isRecording ? "destructive" : "secondary"} 
-                size="sm"
-                className="h-8 w-8 p-0"
-                onClick={isRecording ? stopVoiceRecognition : startVoiceRecognition}
-              >
-                {isRecording ? <MicOff size={16} /> : <Mic size={16} />}
-              </Button>
+              <span>
+                {formType === "task" ? "Add New Task" : 
+                 formType === "subtask" ? "Add New Subtask" : 
+                 "Create New Project"}
+              </span>
+              {formType === "task" && (
+                <Button 
+                  variant={isRecording ? "destructive" : "secondary"} 
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  onClick={isRecording ? stopVoiceRecognition : startVoiceRecognition}
+                >
+                  {isRecording ? <MicOff size={16} /> : <Mic size={16} />}
+                </Button>
+              )}
             </DialogTitle>
             {isRecording && (
               <div className="text-sm text-center mt-2 animate-pulse text-red-500">
@@ -287,8 +633,7 @@ export const AddTaskForm = () => {
             )}
           </DialogHeader>
           
-          {/* Transcription Box */}
-          {transcription && (
+          {formType === "task" && transcription && (
             <Card className="mb-4 bg-muted/20 border border-primary/20">
               <CardContent className="pt-4">
                 <div className="space-y-2">
@@ -319,143 +664,9 @@ export const AddTaskForm = () => {
             </Card>
           )}
           
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="taskName">Task Name</Label>
-              <Input
-                id="taskName"
-                value={taskName}
-                onChange={(e) => setTaskName(e.target.value)}
-                placeholder="What do you need to do?"
-                required
-              />
-            </div>
-            
-            {/* Project Selector */}
-            <div className="space-y-2">
-              <Label htmlFor="project">Project (Optional)</Label>
-              <Select
-                value={selectedProjectId}
-                onValueChange={setSelectedProjectId}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="No Project" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem value="none">No Project</SelectItem>
-                    {projects.map(project => (
-                      <SelectItem key={project.id} value={project.id}>
-                        <div className="flex items-center">
-                          <FolderKanban className="h-4 w-4 mr-2 text-blue-500" />
-                          {project.name}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="mood">Mood</Label>
-              <Select
-                value={taskMood}
-                onValueChange={setTaskMood}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a mood" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem value="Creative" className="flex items-center">
-                      <div className="flex items-center">
-                        <Sparkles size={16} className="mr-2 text-purple-500" /> 
-                        Creative
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="Focused">
-                      <div className="flex items-center">
-                        <Brain size={16} className="mr-2 text-blue-500" /> 
-                        Focused
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="Relaxed">
-                      <div className="flex items-center">
-                        <Coffee size={16} className="mr-2 text-green-500" /> 
-                        Relaxed
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="Energetic">
-                      <div className="flex items-center">
-                        <Zap size={16} className="mr-2 text-amber-500" /> 
-                        Energetic
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="Tired">
-                      <div className="flex items-center">
-                        <Moon size={16} className="mr-2 text-gray-500" /> 
-                        Tired
-                      </div>
-                    </SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="deadline">Deadline Date</Label>
-              <Input
-                id="deadline"
-                type="date"
-                value={deadlineDate}
-                min={today}
-                onChange={(e) => setDeadlineDate(e.target.value)}
-                required
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="deadlineTime">Deadline Time (Optional)</Label>
-              <Input
-                id="deadlineTime"
-                type="time"
-                value={deadlineTime}
-                onChange={(e) => setDeadlineTime(e.target.value)}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label>Estimated Time</Label>
-              <div className="flex gap-2">
-                <div className="flex-1">
-                  <Input
-                    id="estimatedHours"
-                    type="number"
-                    min="0"
-                    value={estimatedHours}
-                    onChange={(e) => setEstimatedHours(e.target.value)}
-                    placeholder="Hours"
-                  />
-                </div>
-                <div className="flex-1">
-                  <Input
-                    id="estimatedMinutes"
-                    type="number"
-                    min="0"
-                    max="59"
-                    value={estimatedMinutes}
-                    onChange={(e) => setEstimatedMinutes(e.target.value)}
-                    placeholder="Minutes"
-                  />
-                </div>
-              </div>
-            </div>
-            
-            <DialogFooter>
-              <Button type="submit" className="w-full">Add Task</Button>
-            </DialogFooter>
-          </form>
+          {formType === "task" && renderTaskForm()}
+          {formType === "subtask" && renderSubtaskForm()}
+          {formType === "project" && renderProjectForm()}
         </DialogContent>
       </Dialog>
       
@@ -470,6 +681,13 @@ export const AddTaskForm = () => {
         }}
       >
         <Mic size={24} className="text-alderan-blue" />
+      </Button>
+      
+      <Button 
+        className="fixed bottom-20 right-4 rounded-full h-14 w-14 shadow-lg" 
+        onClick={() => setIsTypeSelectionOpen(true)}
+      >
+        <Plus size={24} />
       </Button>
     </>
   );
