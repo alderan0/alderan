@@ -38,7 +38,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session?.user) {
-          // Use type casting to access the profiles table
+          // Fetch user profile data with proper typing
           const { data: profile } = await supabase
             .from('profiles')
             .select('*')
@@ -67,8 +67,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (event === 'SIGNED_IN' && session?.user) {
-          // Fetch user profile data
-          // Use type casting to access the profiles table
+          // Fetch user profile data with proper typing
           const { data: profile } = await supabase
             .from('profiles')
             .select('*')

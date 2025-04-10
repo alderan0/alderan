@@ -8,13 +8,19 @@ import ProjectsPage from "./ProjectsPage";
 import { TaskProvider } from "@/context/TaskContext";
 import { TreeProvider } from "@/context/TreeContext";
 import { useAuth } from "@/context/AuthContext";
+import { Loader2 } from "lucide-react";
 
 // Protected route component
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, isLoading } = useAuth();
   
   if (isLoading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen flex-col gap-4">
+        <Loader2 className="h-8 w-8 animate-spin text-alderan-green" />
+        <p className="text-muted-foreground">Loading your data...</p>
+      </div>
+    );
   }
   
   if (!isAuthenticated) {
