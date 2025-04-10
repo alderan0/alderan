@@ -82,7 +82,7 @@ const getLevelThreshold = (level: number): number => {
   // Base points needed for level 1
   const basePoints = 100;
   
-  // Exponential difficulty increase
+  // Exponential difficulty increase - each level gets progressively harder
   return Math.floor(basePoints * Math.pow(1.4, level - 1));
 };
 
@@ -172,7 +172,7 @@ export const TreeProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem('treeHistory', JSON.stringify(treeHistory));
   }, [tree, treeHistory]);
 
-  // Function to calculate task difficulty based on multiple factors
+  // Enhanced AI algorithm to calculate task difficulty based on multiple factors
   const calculateTaskDifficulty = (
     taskName: string, 
     description: string,
@@ -182,19 +182,49 @@ export const TreeProvider = ({ children }: { children: ReactNode }) => {
     // Base difficulty from estimated time (0-40 points)
     const timeBasedDifficulty = Math.min(40, Math.floor(estimatedTime / 3));
     
-    // Difficulty based on task name complexity (0-20 points)
+    // Difficulty based on task name and description complexity (0-20 points)
     const difficultyKeywords = [
       'complex', 'difficult', 'challenging', 'hard', 'advanced', 'refactor',
-      'optimize', 'implement', 'debug', 'fix', 'create', 'develop', 'design'
+      'optimize', 'implement', 'debug', 'fix', 'create', 'develop', 'design',
+      'algorithm', 'architecture', 'database', 'security', 'performance'
     ];
     
-    const complexityScore = difficultyKeywords.reduce((score, keyword) => {
-      if (taskName.toLowerCase().includes(keyword) || 
-          (description && description.toLowerCase().includes(keyword))) {
-        return score + 3;
+    const complexKeywords = [
+      'authentication', 'authorization', 'encryption', 'concurrency', 
+      'distributed', 'scalable', 'microservice', 'integration', 'deployment',
+      'infrastructure', 'kubernetes', 'docker', 'cloud', 'devops',
+      'machine learning', 'ai', 'neural', 'blockchain', 'graphql'
+    ];
+    
+    let complexityScore = 0;
+    const taskText = (taskName + ' ' + (description || '')).toLowerCase();
+    
+    // Regular difficulty keywords add 3 points each
+    difficultyKeywords.forEach(keyword => {
+      if (taskText.includes(keyword)) {
+        complexityScore += 3;
       }
-      return score;
-    }, 0);
+    });
+    
+    // Complex technical keywords add 5 points each
+    complexKeywords.forEach(keyword => {
+      if (taskText.includes(keyword)) {
+        complexityScore += 5;
+      }
+    });
+    
+    // Check for patterns that indicate complexity
+    if (taskText.includes('rewrite') || taskText.includes('from scratch')) {
+      complexityScore += 8;
+    }
+    
+    if (taskText.includes('urgent') || taskText.includes('asap')) {
+      complexityScore += 5;
+    }
+    
+    if (taskText.includes('research') || taskText.includes('investigate')) {
+      complexityScore += 4;
+    }
     
     const nameBasedDifficulty = Math.min(20, complexityScore);
     
@@ -333,7 +363,7 @@ export const TreeProvider = ({ children }: { children: ReactNode }) => {
       applyTool, 
       resetTree,
       getCurrentLevel,
-      getTreeTier, // Add this function to the context
+      getTreeTier,
       treeHistory,
       galleryIndex,
       viewPastTree,

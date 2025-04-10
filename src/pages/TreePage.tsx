@@ -2,7 +2,7 @@
 import { VirtualTree } from "@/components/tree/VirtualTree";
 import { ToolsInventory } from "@/components/tree/ToolsInventory";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { TreeDeciduous, Award, Star, TrendingUp } from "lucide-react";
+import { TreeDeciduous, Award, Star, TrendingUp, Zap } from "lucide-react";
 import { useTree } from "@/context/TreeContext";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -12,12 +12,17 @@ const TreePage = () => {
   const { tree } = useTree();
   const isMobile = useIsMobile();
   
-  // Calculate progress to next level
+  // Calculate progress to next level using the exponential curve
   const currentLevelThreshold = Math.floor(100 * Math.pow(1.4, tree.level - 1));
   const nextLevelThreshold = Math.floor(100 * Math.pow(1.4, tree.level));
   const pointsNeeded = nextLevelThreshold - currentLevelThreshold;
   const progressPoints = tree.points - currentLevelThreshold;
   const progressPercent = Math.min(100, Math.max(0, Math.floor((progressPoints / pointsNeeded) * 100)));
+  
+  // Calculate days until next reset
+  const today = new Date();
+  const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+  const daysUntilReset = lastDay - today.getDate() + 1;
   
   return (
     <div className="pb-20 space-y-8">
@@ -37,8 +42,12 @@ const TreePage = () => {
               </Badge>
             </div>
           </div>
-          <CardDescription>
-            A visual representation of your productivity growing over time
+          <CardDescription className="flex items-center justify-between">
+            <span>A visual representation of your productivity growing over time</span>
+            <span className="text-xs text-muted-foreground flex items-center">
+              <Zap size={12} className="mr-1 text-amber-500" />
+              {daysUntilReset} day{daysUntilReset !== 1 ? 's' : ''} until monthly reset
+            </span>
           </CardDescription>
         </CardHeader>
         

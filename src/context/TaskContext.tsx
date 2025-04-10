@@ -59,7 +59,7 @@ export interface Tool {
   id: string;
   name: string;
   type: string;
-  minLevel?: number; // Instead of tier, we'll use minLevel to align with the level system
+  minLevel?: number; // Using minLevel to align with the level system (1-20)
   description: string;
   used: boolean;
   effect: {
@@ -112,6 +112,13 @@ const toolsDatabase = [
     minLevel: 2
   },
   {
+    name: "Code Comment Bird",
+    type: "decorate" as const,
+    description: "Adds birds displaying random code comments",
+    effect: { beauty: 10, style: "birds" },
+    minLevel: 3
+  },
+  {
     name: "Pixel Pruner",
     type: "prune" as const,
     description: "Shapes tree into pixel art",
@@ -123,21 +130,21 @@ const toolsDatabase = [
     type: "water" as const,
     description: "Adds a lo-fi aesthetic with muted tones",
     effect: { height: 6, health: 4, style: "lofi" },
-    minLevel: 3
+    minLevel: 5
   },
   {
-    name: "Night Mode Lantern",
-    type: "illuminate" as const,
-    description: "Illuminates tree with a dark-mode vibe",
-    effect: { beauty: 15, style: "nightmode" },
-    minLevel: 12
-  },
-  {
-    name: "Code Comment Bird",
-    type: "decorate" as const,
-    description: "Adds birds displaying random code comments",
-    effect: { beauty: 10, style: "birds" },
+    name: "Variable Vine",
+    type: "enhance" as const,
+    description: "Grows dynamic vines that respond to code changes",
+    effect: { height: 8, beauty: 6, style: "variable" },
     minLevel: 6
+  },
+  {
+    name: "Function Flower Pot",
+    type: "enhance" as const,
+    description: "Grows function-shaped flowers around your tree",
+    effect: { beauty: 10, leaves: 5, style: "functions" },
+    minLevel: 7
   },
   {
     name: "Binary Bark Engraver",
@@ -147,11 +154,11 @@ const toolsDatabase = [
     minLevel: 8
   },
   {
-    name: "Function Flower Pot",
-    type: "enhance" as const,
-    description: "Grows function-shaped flowers around your tree",
-    effect: { beauty: 18, leaves: 8, style: "functions" },
-    minLevel: 15
+    name: "API Connector",
+    type: "customize" as const,
+    description: "Connects your tree to external resources with animated tendrils",
+    effect: { height: 12, beauty: 12, style: "api" },
+    minLevel: 9
   },
   {
     name: "Looping Lights",
@@ -161,11 +168,25 @@ const toolsDatabase = [
     minLevel: 10
   },
   {
-    name: "Recursive Roots",
+    name: "Query Optimizer",
     type: "enhance" as const,
-    description: "Extends roots in beautiful recursive patterns",
-    effect: { health: 12, beauty: 10, style: "recursive" },
-    minLevel: 18
+    description: "Optimizes tree performance with subtle glowing patterns",
+    effect: { health: 15, beauty: 8, style: "query" },
+    minLevel: 11
+  },
+  {
+    name: "Night Mode Lantern",
+    type: "illuminate" as const,
+    description: "Illuminates tree with a dark-mode vibe",
+    effect: { beauty: 15, style: "nightmode" },
+    minLevel: 12
+  },
+  {
+    name: "Component Constructor",
+    type: "build" as const,
+    description: "Creates reusable tree components with special properties",
+    effect: { height: 14, leaves: 12, beauty: 6 },
+    minLevel: 13
   },
   {
     name: "Algorithm Animator",
@@ -175,6 +196,13 @@ const toolsDatabase = [
     minLevel: 14
   },
   {
+    name: "Function Fountain",
+    type: "enhance" as const,
+    description: "Creates a fountain of function particles at the base of your tree",
+    effect: { beauty: 18, leaves: 8, style: "functions" },
+    minLevel: 15
+  },
+  {
     name: "Data Structure Decorator",
     type: "decorate" as const,
     description: "Adds visual representations of data structures to your tree",
@@ -182,18 +210,25 @@ const toolsDatabase = [
     minLevel: 16
   },
   {
-    name: "API Connector",
-    type: "customize" as const,
-    description: "Connects your tree to external resources with animated tendrils",
-    effect: { height: 12, beauty: 12, style: "api" },
-    minLevel: 9
+    name: "CI/CD Pipeline",
+    type: "enhance" as const,
+    description: "Creates a continuous improvement system for your tree",
+    effect: { health: 16, height: 8, beauty: 6 },
+    minLevel: 17
   },
   {
-    name: "Query Optimizer",
+    name: "Recursive Roots",
     type: "enhance" as const,
-    description: "Optimizes tree performance with subtle glowing patterns",
-    effect: { health: 15, beauty: 8, style: "query" },
-    minLevel: 11
+    description: "Extends roots in beautiful recursive patterns",
+    effect: { health: 12, beauty: 10, style: "recursive" },
+    minLevel: 18
+  },
+  {
+    name: "Cloud Integration System",
+    type: "enhance" as const,
+    description: "Surrounds your tree with floating cloud platforms",
+    effect: { beauty: 22, health: 10, style: "cloud" },
+    minLevel: 19
   },
   {
     name: "Quantum Quantum",
