@@ -208,38 +208,41 @@ export const PixelatedTree = () => {
       </div>
       
       <Card className="overflow-hidden">
-        <ContextMenuTrigger className="focus:outline-none">
-          <CardContent className="p-6 bg-gradient-to-b from-blue-50 to-white">
-            {renderPixelatedTree()}
-            
-            <div className="mt-4 grid grid-cols-4 gap-2">
-              <div className="flex flex-col items-center">
-                <Droplet className="h-5 w-5 text-blue-500 mb-1" />
-                <div className="text-xs text-center">Height</div>
-                <div className="font-medium">{tree?.height || 0}%</div>
+        {/* Properly wrap ContextMenuTrigger with ContextMenu */}
+        <ContextMenu>
+          <ContextMenuTrigger className="focus:outline-none">
+            <CardContent className="p-6 bg-gradient-to-b from-blue-50 to-white">
+              {renderPixelatedTree()}
+              
+              <div className="mt-4 grid grid-cols-4 gap-2">
+                <div className="flex flex-col items-center">
+                  <Droplet className="h-5 w-5 text-blue-500 mb-1" />
+                  <div className="text-xs text-center">Height</div>
+                  <div className="font-medium">{tree?.height || 0}%</div>
+                </div>
+                <div className="flex flex-col items-center">
+                  <Leaf className="h-5 w-5 text-green-500 mb-1" />
+                  <div className="text-xs text-center">Leaves</div>
+                  <div className="font-medium">{tree?.leaves || 0}%</div>
+                </div>
+                <div className="flex flex-col items-center">
+                  <Heart className="h-5 w-5 text-red-500 mb-1" />
+                  <div className="text-xs text-center">Health</div>
+                  <div className="font-medium">{tree?.health || 0}%</div>
+                </div>
+                <div className="flex flex-col items-center">
+                  <Sparkles className="h-5 w-5 text-amber-500 mb-1" />
+                  <div className="text-xs text-center">Beauty</div>
+                  <div className="font-medium">{tree?.beauty || 0}%</div>
+                </div>
               </div>
-              <div className="flex flex-col items-center">
-                <Leaf className="h-5 w-5 text-green-500 mb-1" />
-                <div className="text-xs text-center">Leaves</div>
-                <div className="font-medium">{tree?.leaves || 0}%</div>
-              </div>
-              <div className="flex flex-col items-center">
-                <Heart className="h-5 w-5 text-red-500 mb-1" />
-                <div className="text-xs text-center">Health</div>
-                <div className="font-medium">{tree?.health || 0}%</div>
-              </div>
-              <div className="flex flex-col items-center">
-                <Sparkles className="h-5 w-5 text-amber-500 mb-1" />
-                <div className="text-xs text-center">Beauty</div>
-                <div className="font-medium">{tree?.beauty || 0}%</div>
-              </div>
-            </div>
-          </CardContent>
-        </ContextMenuTrigger>
-        <ContextMenuContent>
-          <ContextMenuItem>View Details</ContextMenuItem>
-          <ContextMenuItem>Take Screenshot</ContextMenuItem>
-        </ContextMenuContent>
+            </CardContent>
+          </ContextMenuTrigger>
+          <ContextMenuContent>
+            <ContextMenuItem>View Details</ContextMenuItem>
+            <ContextMenuItem>Take Screenshot</ContextMenuItem>
+          </ContextMenuContent>
+        </ContextMenu>
       </Card>
       
       <div className="space-y-4">
