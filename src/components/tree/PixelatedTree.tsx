@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useMemo } from "react";
 import { useTree } from "@/context/TreeContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { PixelTreeReward } from "@/context/TreeContext";
@@ -30,9 +30,17 @@ export const PixelatedTree = () => {
   const { tree, applyReward } = useTree();
   
   // Safely handle rewards - Add null check before filtering
-  const unusedRewards = tree?.rewards?.filter(reward => !reward.used) || [];
-  const growthRewards = unusedRewards.filter(reward => reward.type === "growth");
-  const decorationRewards = unusedRewards.filter(reward => reward.type === "decoration");
+  const unusedRewards = useMemo(() => {
+    return tree?.rewards?.filter(reward => !reward.used) || [];
+  }, [tree?.rewards]);
+  
+  const growthRewards = useMemo(() => {
+    return unusedRewards.filter(reward => reward.type === "growth");
+  }, [unusedRewards]);
+  
+  const decorationRewards = useMemo(() => {
+    return unusedRewards.filter(reward => reward.type === "decoration");
+  }, [unusedRewards]);
   
   // Function to get color based on rarity
   const getRarityColor = (rarity: string) => {
@@ -47,6 +55,7 @@ export const PixelatedTree = () => {
   
   // Function to get tailwind class for the tree based on its size
   const getTreeSizeClass = () => {
+    if (!tree) return "h-24";
     if (tree.height < 30) return "h-24";
     if (tree.height < 60) return "h-32";
     return "h-40";
@@ -54,11 +63,15 @@ export const PixelatedTree = () => {
   
   // Function to get tailwind classes for the tree appearance
   const getTreeAppearanceClasses = () => {
+    if (!tree || !tree.styles) {
+      return "mx-auto transition-all duration-500 bg-gradient-to-tr from-green-600 to-lime-400 shadow-md shadow-green-800/20";
+    }
+    
     const baseClasses = "mx-auto transition-all duration-500";
     let styleClasses = "";
     
     // Leaf style
-    switch(tree?.styles?.leafStyle) {
+    switch(tree.styles.leafStyle) {
       case "syntax":
         styleClasses += " bg-gradient-to-tr from-green-700 to-emerald-400";
         break;
@@ -73,7 +86,7 @@ export const PixelatedTree = () => {
     }
     
     // Lighting effects
-    switch(tree?.styles?.lighting) {
+    switch(tree.styles.lighting) {
       case "nightmode":
         styleClasses += " shadow-lg shadow-blue-700/30";
         break;
@@ -99,6 +112,12 @@ export const PixelatedTree = () => {
     if (health < 30) leafColor = "bg-yellow-300";
     if (health < 15) leafColor = "bg-orange-300";
     
+    // Create unique tree patterns based on applied decorations and growth promoters
+    const hasSpecialFunctions = tree?.styles?.special?.includes('functions') || false;
+    const hasSpecialBirds = tree?.styles?.special?.includes('birds') || false;
+    const hasSpecialRecursive = tree?.styles?.special?.includes('recursive') || false;
+    const decorationsCount = tree?.decorations?.length || 0;
+    
     return (
       <div className="flex flex-col items-center justify-end h-60 relative">
         {/* Tree trunk */}
@@ -122,29 +141,29 @@ export const PixelatedTree = () => {
           </div>
           
           {/* Decorations based on special styles */}
-          {tree?.styles?.special?.includes('birds') && (
+          {hasSpecialBirds && (
             <div className="absolute top-1/4 -right-4">
               <div className="w-4 h-4 bg-blue-500 rounded-full"></div>
               <div className="w-6 h-2 bg-blue-600 -mt-1 ml-3 transform rotate-45"></div>
             </div>
           )}
           
-          {tree?.styles?.special?.includes('functions') && (
+          {hasSpecialFunctions && (
             <div className="absolute top-1/3 -left-8">
               <div className="text-xs bg-white/70 rounded px-1 font-mono">fn()</div>
             </div>
           )}
           
-          {tree?.styles?.special?.includes('recursive') && (
+          {hasSpecialRecursive && (
             <div className="absolute bottom-1/4 left-full">
               <div className="w-16 h-16 border border-green-200 rounded-full animate-ping opacity-30"></div>
             </div>
           )}
           
           {/* Decorations based on tree state */}
-          {tree?.decorations?.length > 0 && (
+          {decorationsCount > 0 && (
             <div className="absolute inset-0 pointer-events-none">
-              {tree.decorations.map((decoration, i) => (
+              {Array.from({ length: decorationsCount }).map((_, i) => (
                 <div 
                   key={i}
                   className="absolute"
@@ -154,7 +173,9 @@ export const PixelatedTree = () => {
                     transform: `rotate(${Math.random() * 360}deg)`,
                   }}
                 >
-                  <div className="w-3 h-3 bg-blue-500 rounded-full shadow-lg"></div>
+                  <div className={`w-3 h-3 rounded-full shadow-lg bg-${
+                    ['blue-500', 'purple-500', 'amber-500', 'green-400', 'red-400'][i % 5]
+                  }`}></div>
                 </div>
               ))}
             </div>
@@ -163,6 +184,10 @@ export const PixelatedTree = () => {
       </div>
     );
   };
+  
+  if (!tree) {
+    return <div className="flex justify-center items-center h-60">Loading tree data...</div>;
+  }
   
   return (
     <div className="space-y-6">
@@ -235,7 +260,7 @@ export const PixelatedTree = () => {
                   variant="outline"
                   size="sm"
                   className={`flex flex-col h-auto text-xs p-2 ${getRarityColor(reward.rarity)}`}
-                  onClick={() => applyReward(reward)}
+                  onClick={() => applyReward && applyReward(reward)}
                 >
                   <span className="truncate w-full text-center">{reward.name}</span>
                   <span className="text-[10px] opacity-70 capitalize">{reward.rarity}</span>
@@ -266,7 +291,7 @@ export const PixelatedTree = () => {
                   variant="outline"
                   size="sm"
                   className={`flex flex-col h-auto text-xs p-2 ${getRarityColor(reward.rarity)}`}
-                  onClick={() => applyReward(reward)}
+                  onClick={() => applyReward && applyReward(reward)}
                 >
                   <span className="truncate w-full text-center">{reward.name}</span>
                   <span className="text-[10px] opacity-70 capitalize">{reward.rarity}</span>
