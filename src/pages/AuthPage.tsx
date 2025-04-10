@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -8,16 +7,18 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-
 const AuthPage = () => {
-  const { login, signup, isLoading } = useAuth();
+  const {
+    login,
+    signup,
+    isLoading
+  } = useAuth();
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [signupUsername, setSignupUsername] = useState("");
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
   const [error, setError] = useState("");
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -25,14 +26,12 @@ const AuthPage = () => {
       setError("Please fill in all fields");
       return;
     }
-    
     try {
       await login(loginEmail, loginPassword);
     } catch (err) {
       setError("Login failed. Please check your credentials.");
     }
   };
-
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -40,23 +39,16 @@ const AuthPage = () => {
       setError("Please fill in all fields");
       return;
     }
-    
     try {
       await signup(signupUsername, signupEmail, signupPassword);
     } catch (err) {
       setError("Signup failed. Please try again.");
     }
   };
-
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-alderan-sand p-4">
+  return <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-alderan-sand p-4">
       <div className="max-w-md w-full">
         <div className="flex flex-col items-center mb-8">
-          <img 
-            src="/lovable-uploads/e14b38a8-ba30-4f3a-9853-8b7ec0bb6fc7.png" 
-            alt="Alderan Logo" 
-            className="h-16 w-16 mb-2" 
-          />
+          <img src="/lovable-uploads/e14b38a8-ba30-4f3a-9853-8b7ec0bb6fc7.png" alt="Alderan Logo" className="h-16 w-16 mb-2" />
           <h1 className="text-3xl font-bold text-primary">Alderan</h1>
           <p className="text-muted-foreground">Grow your productivity</p>
         </div>
@@ -67,12 +59,10 @@ const AuthPage = () => {
             <TabsTrigger value="signup">Sign Up</TabsTrigger>
           </TabsList>
           
-          {error && (
-            <Alert variant="destructive" className="mb-4">
+          {error && <Alert variant="destructive" className="mb-4">
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
+            </Alert>}
           
           <TabsContent value="login">
             <Card>
@@ -84,44 +74,24 @@ const AuthPage = () => {
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
-                    <Input 
-                      id="email" 
-                      type="email" 
-                      placeholder="demo@example.com" 
-                      value={loginEmail}
-                      onChange={(e) => setLoginEmail(e.target.value)}
-                    />
+                    <Input id="email" type="email" placeholder="demo@example.com" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="password">Password</Label>
-                    <Input 
-                      id="password" 
-                      type="password" 
-                      placeholder="••••••••" 
-                      value={loginPassword}
-                      onChange={(e) => setLoginPassword(e.target.value)}
-                    />
+                    <Input id="password" type="password" placeholder="••••••••" value={loginPassword} onChange={e => setLoginPassword(e.target.value)} />
                   </div>
                 </CardContent>
                 <CardFooter>
                   <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? (
-                      <>
+                    {isLoading ? <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         Please wait
-                      </>
-                    ) : (
-                      "Login"
-                    )}
+                      </> : "Login"}
                   </Button>
                 </CardFooter>
               </form>
               
-              <div className="px-6 py-4 bg-muted/50 rounded-b-lg">
-                <p className="text-sm text-center text-muted-foreground">
-                  Demo credentials: demo@example.com / password
-                </p>
-              </div>
+              
             </Card>
           </TabsContent>
           
@@ -135,44 +105,23 @@ const AuthPage = () => {
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="username">Username</Label>
-                    <Input 
-                      id="username" 
-                      placeholder="TreeMaster" 
-                      value={signupUsername}
-                      onChange={(e) => setSignupUsername(e.target.value)}
-                    />
+                    <Input id="username" placeholder="TreeMaster" value={signupUsername} onChange={e => setSignupUsername(e.target.value)} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="signup-email">Email</Label>
-                    <Input 
-                      id="signup-email" 
-                      type="email" 
-                      placeholder="you@example.com" 
-                      value={signupEmail}
-                      onChange={(e) => setSignupEmail(e.target.value)}
-                    />
+                    <Input id="signup-email" type="email" placeholder="you@example.com" value={signupEmail} onChange={e => setSignupEmail(e.target.value)} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="signup-password">Password</Label>
-                    <Input 
-                      id="signup-password" 
-                      type="password" 
-                      placeholder="••••••••" 
-                      value={signupPassword}
-                      onChange={(e) => setSignupPassword(e.target.value)}
-                    />
+                    <Input id="signup-password" type="password" placeholder="••••••••" value={signupPassword} onChange={e => setSignupPassword(e.target.value)} />
                   </div>
                 </CardContent>
                 <CardFooter>
                   <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? (
-                      <>
+                    {isLoading ? <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         Creating account
-                      </>
-                    ) : (
-                      "Create Account"
-                    )}
+                      </> : "Create Account"}
                   </Button>
                 </CardFooter>
               </form>
@@ -180,8 +129,6 @@ const AuthPage = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default AuthPage;
