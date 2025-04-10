@@ -1,4 +1,3 @@
-
 import { SuggestedTasks } from "@/components/tasks/SuggestedTasks";
 import { TaskList } from "@/components/tasks/TaskList";
 import { AddTaskForm } from "@/components/tasks/AddTaskForm";
@@ -12,23 +11,21 @@ import { AIScheduleRecommendations } from "@/components/tasks/AIScheduleRecommen
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { useIsMobile } from "@/hooks/use-mobile";
-
 const TasksPage = () => {
-  const { currentMood, projects } = useTasks();
+  const {
+    currentMood,
+    projects
+  } = useTasks();
   const isMobile = useIsMobile();
-  
+
   // Get active projects count
   const activeProjects = projects.filter(p => !p.completed);
   const activeProjectsCount = activeProjects.length;
-  
-  return (
-    <div className="pb-24 space-y-6">
+  return <div className="pb-24 space-y-6">
       <div className="grid gap-6 md:grid-cols-3">
         <Card className="col-span-3 md:col-span-2">
           <CardHeader className="pb-2">
-            <CardTitle className="flex items-center text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-blue-500">
-              Vibe Coder Dashboard
-            </CardTitle>
+            <CardTitle className="flex items-center text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-blue-500">Dashboard</CardTitle>
             <CardDescription>
               Plan your day based on your current mood and coding rhythm
             </CardDescription>
@@ -51,29 +48,19 @@ const TasksPage = () => {
               <div className="flex items-center">
                 <FolderKanban size={14} className="mr-1 text-blue-500" />
                 <span className="text-sm">
-                  {activeProjectsCount > 0 ? (
-                    <>{activeProjectsCount} Active Project{activeProjectsCount !== 1 ? 's' : ''}</>
-                  ) : (
-                    <>No Projects</>
-                  )}
+                  {activeProjectsCount > 0 ? <>{activeProjectsCount} Active Project{activeProjectsCount !== 1 ? 's' : ''}</> : <>No Projects</>}
                 </span>
               </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Display active project names */}
-            {activeProjectsCount > 0 && (
-              <div className="space-y-2 mb-3">
-                <h4 className="text-sm font-medium">Active Projects</h4>
+            {activeProjectsCount > 0 && <div className="space-y-2 mb-3">
+                
                 <div className="flex flex-wrap gap-2">
-                  {activeProjects.map(project => (
-                    <Badge key={project.id} variant="outline" className="bg-blue-50/50">
-                      {project.name}
-                    </Badge>
-                  ))}
+                  {activeProjects.map(project => {})}
                 </div>
-              </div>
-            )}
+              </div>}
             <HabitTracker />
           </CardContent>
         </Card>
@@ -119,8 +106,6 @@ const TasksPage = () => {
       </Tabs>
       
       <AddTaskForm />
-    </div>
-  );
+    </div>;
 };
-
 export default TasksPage;
