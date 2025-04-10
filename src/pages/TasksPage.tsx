@@ -1,3 +1,4 @@
+
 import { SuggestedTasks } from "@/components/tasks/SuggestedTasks";
 import { TaskList } from "@/components/tasks/TaskList";
 import { AddTaskForm } from "@/components/tasks/AddTaskForm";
@@ -11,6 +12,7 @@ import { AIScheduleRecommendations } from "@/components/tasks/AIScheduleRecommen
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { useIsMobile } from "@/hooks/use-mobile";
+
 const TasksPage = () => {
   const {
     currentMood,
@@ -19,8 +21,9 @@ const TasksPage = () => {
   const isMobile = useIsMobile();
 
   // Get active projects count
-  const activeProjects = projects.filter(p => !p.completed);
+  const activeProjects = projects?.filter(p => !p.completed) || [];
   const activeProjectsCount = activeProjects.length;
+
   return <div className="pb-24 space-y-6">
       <div className="grid gap-6 md:grid-cols-3">
         <Card className="col-span-3 md:col-span-2">
@@ -55,12 +58,19 @@ const TasksPage = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Display active project names */}
-            {activeProjectsCount > 0 && <div className="space-y-2 mb-3">
-                
+            {activeProjectsCount > 0 && (
+              <div className="space-y-2 mb-3">
                 <div className="flex flex-wrap gap-2">
-                  {activeProjects.map(project => {})}
+                  {activeProjects.map(project => (
+                    <Link to={`/app/projects?id=${project.id}`} key={project.id}>
+                      <Badge variant="outline" className="cursor-pointer hover:bg-accent">
+                        {project.name}
+                      </Badge>
+                    </Link>
+                  ))}
                 </div>
-              </div>}
+              </div>
+            )}
             <HabitTracker />
           </CardContent>
         </Card>
@@ -108,4 +118,5 @@ const TasksPage = () => {
       <AddTaskForm />
     </div>;
 };
+
 export default TasksPage;

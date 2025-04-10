@@ -29,8 +29,8 @@ import { Badge } from "@/components/ui/badge";
 export const PixelatedTree = () => {
   const { tree, applyReward } = useTree();
   
-  // Divide rewards by type and rarity
-  const unusedRewards = tree.rewards.filter(reward => !reward.used);
+  // Safely handle rewards - Add null check before filtering
+  const unusedRewards = tree?.rewards?.filter(reward => !reward.used) || [];
   const growthRewards = unusedRewards.filter(reward => reward.type === "growth");
   const decorationRewards = unusedRewards.filter(reward => reward.type === "decoration");
   
@@ -58,7 +58,7 @@ export const PixelatedTree = () => {
     let styleClasses = "";
     
     // Leaf style
-    switch(tree.styles.leafStyle) {
+    switch(tree?.styles?.leafStyle) {
       case "syntax":
         styleClasses += " bg-gradient-to-tr from-green-700 to-emerald-400";
         break;
@@ -73,7 +73,7 @@ export const PixelatedTree = () => {
     }
     
     // Lighting effects
-    switch(tree.styles.lighting) {
+    switch(tree?.styles?.lighting) {
       case "nightmode":
         styleClasses += " shadow-lg shadow-blue-700/30";
         break;
@@ -92,8 +92,8 @@ export const PixelatedTree = () => {
   
   // Pixel art representation of the tree
   const renderPixelatedTree = () => {
-    const leaves = Math.min(100, tree.leaves);
-    const health = tree.health;
+    const leaves = Math.min(100, tree?.leaves || 0);
+    const health = tree?.health || 0;
     
     let leafColor = "bg-emerald-300";
     if (health < 30) leafColor = "bg-yellow-300";
@@ -102,7 +102,7 @@ export const PixelatedTree = () => {
     return (
       <div className="flex flex-col items-center justify-end h-60 relative">
         {/* Tree trunk */}
-        <div className={`w-6 ${tree.height < 50 ? 'h-16' : 'h-24'} bg-amber-800 rounded-sm`}></div>
+        <div className={`w-6 ${tree?.height < 50 ? 'h-16' : 'h-24'} bg-amber-800 rounded-sm`}></div>
         
         {/* Tree leaves - pixelated style */}
         <div className="absolute bottom-16 flex flex-col items-center">
@@ -122,27 +122,27 @@ export const PixelatedTree = () => {
           </div>
           
           {/* Decorations based on special styles */}
-          {tree.styles.special.includes('birds') && (
+          {tree?.styles?.special?.includes('birds') && (
             <div className="absolute top-1/4 -right-4">
               <div className="w-4 h-4 bg-blue-500 rounded-full"></div>
               <div className="w-6 h-2 bg-blue-600 -mt-1 ml-3 transform rotate-45"></div>
             </div>
           )}
           
-          {tree.styles.special.includes('functions') && (
+          {tree?.styles?.special?.includes('functions') && (
             <div className="absolute top-1/3 -left-8">
               <div className="text-xs bg-white/70 rounded px-1 font-mono">fn()</div>
             </div>
           )}
           
-          {tree.styles.special.includes('recursive') && (
+          {tree?.styles?.special?.includes('recursive') && (
             <div className="absolute bottom-1/4 left-full">
               <div className="w-16 h-16 border border-green-200 rounded-full animate-ping opacity-30"></div>
             </div>
           )}
           
           {/* Decorations based on tree state */}
-          {tree.decorations.length > 0 && (
+          {tree?.decorations?.length > 0 && (
             <div className="absolute inset-0 pointer-events-none">
               {tree.decorations.map((decoration, i) => (
                 <div 
@@ -172,7 +172,7 @@ export const PixelatedTree = () => {
           <Tooltip>
             <TooltipTrigger>
               <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200">
-                Level {tree.level}/20
+                Level {tree?.level || 1}/20
               </Badge>
             </TooltipTrigger>
             <TooltipContent>
@@ -191,22 +191,22 @@ export const PixelatedTree = () => {
               <div className="flex flex-col items-center">
                 <Droplet className="h-5 w-5 text-blue-500 mb-1" />
                 <div className="text-xs text-center">Height</div>
-                <div className="font-medium">{tree.height}%</div>
+                <div className="font-medium">{tree?.height || 0}%</div>
               </div>
               <div className="flex flex-col items-center">
                 <Leaf className="h-5 w-5 text-green-500 mb-1" />
                 <div className="text-xs text-center">Leaves</div>
-                <div className="font-medium">{tree.leaves}%</div>
+                <div className="font-medium">{tree?.leaves || 0}%</div>
               </div>
               <div className="flex flex-col items-center">
                 <Heart className="h-5 w-5 text-red-500 mb-1" />
                 <div className="text-xs text-center">Health</div>
-                <div className="font-medium">{tree.health}%</div>
+                <div className="font-medium">{tree?.health || 0}%</div>
               </div>
               <div className="flex flex-col items-center">
                 <Sparkles className="h-5 w-5 text-amber-500 mb-1" />
                 <div className="text-xs text-center">Beauty</div>
-                <div className="font-medium">{tree.beauty}%</div>
+                <div className="font-medium">{tree?.beauty || 0}%</div>
               </div>
             </div>
           </CardContent>
