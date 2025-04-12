@@ -105,7 +105,8 @@ export const TaskList = () => {
     }
   };
 
-  const formatDeadline = (deadline: Date) => {
+  const formatDeadline = (deadline: Date | string) => {
+    if (!deadline) return 'No deadline';
     return formatDistanceToNow(deadline, { addSuffix: true });
   };
   

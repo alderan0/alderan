@@ -1,3 +1,4 @@
+
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 
@@ -8,9 +9,17 @@ export function cn(...inputs: ClassValue[]) {
 /**
  * Format a date as a relative time string (e.g., "2 days ago")
  */
-export function formatDistanceToNow(date: Date, options?: { addSuffix?: boolean }): string {
+export function formatDistanceToNow(date: Date | string | number, options?: { addSuffix?: boolean }): string {
+  // Ensure date is a valid Date object
+  const validDate = date instanceof Date ? date : new Date(date);
+  
+  // Check if the date is valid
+  if (isNaN(validDate.getTime())) {
+    return 'Invalid date';
+  }
+  
   const now = new Date();
-  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+  const diffInSeconds = Math.floor((now.getTime() - validDate.getTime()) / 1000);
   
   if (diffInSeconds < 60) {
     return options?.addSuffix ? 'less than a minute ago' : 'less than a minute';

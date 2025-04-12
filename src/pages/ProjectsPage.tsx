@@ -139,7 +139,7 @@ const ProjectsPage = () => {
                     <div className="text-sm text-muted-foreground space-y-2">
                       <div className="flex items-center">
                         <Calendar className="mr-2 h-4 w-4" />
-                        Completed {formatDistanceToNow(new Date(project.completedAt!), { addSuffix: true })}
+                        Completed {project.completedAt && formatDistanceToNow(new Date(project.completedAt), { addSuffix: true })}
                       </div>
                     </div>
                   </CardContent>

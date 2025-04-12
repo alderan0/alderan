@@ -3,7 +3,7 @@ import { useTasks } from "@/context/TaskContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow } from "@/lib/utils";
 
 export const SuggestedTasks = () => {
   const { suggestedTasks, completeTask } = useTasks();
@@ -29,7 +29,7 @@ export const SuggestedTasks = () => {
                   <p className="font-medium">{task.name}</p>
                   <div className="flex items-center text-xs text-muted-foreground">
                     <Clock size={12} className="mr-1" />
-                    <span>Due {formatDistanceToNow(task.deadline, { addSuffix: true })}</span>
+                    <span>Due {formatDistanceToNow(new Date(task.deadline), { addSuffix: true })}</span>
                   </div>
                 </div>
                 <Button 
