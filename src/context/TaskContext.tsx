@@ -357,7 +357,8 @@ const calculatePriority = (task: NewTaskInput, tasks: Task[], currentMood: strin
   
   const deadlineScore = 100 - Math.min(100, hoursUntilDeadline);
   
-  const timeScore = 100 - Math.min(100, task.estimatedTime);
+  const estimatedTimeNum = typeof task.estimatedTime === 'number' ? task.estimatedTime : 0;
+  const timeScore = 100 - Math.min(100, estimatedTimeNum);
   
   let moodScore = 50;
   if (task.mood && task.mood === currentMood) {
@@ -756,11 +757,13 @@ export const TaskProvider = ({ children }: { children: ReactNode }) => {
       const completedTasks = prev.filter(task => task.completed);
       
       const tasksWithScores: TaskWithPriorityScore[] = incompleteTasks.map(task => {
+        const estimatedTime = typeof task.estimatedTime === 'number' ? task.estimatedTime : 0;
+        
         const priorityScore = calculatePriority(
           {
             name: task.name,
             deadline: task.deadline,
-            estimatedTime: task.estimatedTime,
+            estimatedTime: estimatedTime,
             mood: task.mood
           }, 
           prev,
@@ -807,7 +810,6 @@ export const TaskProvider = ({ children }: { children: ReactNode }) => {
         moodDistribution[task.mood] = (moodDistribution[task.mood] || 0) + 1;
       }
       
-      // Track task types based on keywords
       const taskText = task.name.toLowerCase();
       if (taskText.includes('bug') || taskText.includes('fix')) {
         taskTypeDistribution['debugging'] = (taskTypeDistribution['debugging'] || 0) + 1;
@@ -844,7 +846,6 @@ export const TaskProvider = ({ children }: { children: ReactNode }) => {
       }
     });
     
-    // Find most successful task type
     let preferredTaskType = '';
     let maxTaskType = 0;
     
@@ -881,7 +882,6 @@ export const TaskProvider = ({ children }: { children: ReactNode }) => {
       habitDescription += `. You're particularly good at ${preferredTaskType} tasks`;
     }
     
-    // Now create and return a new habit based on our analysis
     const newHabit: Habit = {
       id: Date.now().toString(),
       name: habitName,
@@ -891,7 +891,6 @@ export const TaskProvider = ({ children }: { children: ReactNode }) => {
       preferredMood
     };
     
-    // Only add the habit if we don't already have one with a similar name
     const existingSimilarHabit = habits.find(h => 
       h.name.toLowerCase().includes(mostProductiveTime.toLowerCase()) && 
       (!preferredMood || h.name.toLowerCase().includes(preferredMood.toLowerCase()))
@@ -911,13 +910,11 @@ export const TaskProvider = ({ children }: { children: ReactNode }) => {
     const oneMonth = new Date(today);
     oneMonth.setDate(oneMonth.getDate() + 30);
     
-    // Convert task.deadline back to Date object if it's a string
     const tasksWithProperDates = incompleteTasks.map(task => ({
       ...task,
       deadline: task.deadline instanceof Date ? task.deadline : new Date(task.deadline)
     }));
     
-    // Daily tasks - due today or tomorrow, sorted by priority
     const dailyTasks = tasksWithProperDates
       .filter(task => {
         const taskDate = new Date(task.deadline);
@@ -932,12 +929,10 @@ export const TaskProvider = ({ children }: { children: ReactNode }) => {
         );
       })
       .sort((a, b) => {
-        // First by date
         const dateA = new Date(a.deadline).getTime();
         const dateB = new Date(b.deadline).getTime();
         if (dateA !== dateB) return dateA - dateB;
         
-        // Then by priority
         if (a.priority !== b.priority) {
           if (a.priority === 'high') return -1;
           if (b.priority === 'high') return 1;
@@ -945,7 +940,6 @@ export const TaskProvider = ({ children }: { children: ReactNode }) => {
           return 1;
         }
         
-        // Then by mood match
         const aMoodMatch = a.mood === currentMood;
         const bMoodMatch = b.mood === currentMood;
         if (aMoodMatch && !bMoodMatch) return -1;
@@ -954,7 +948,6 @@ export const TaskProvider = ({ children }: { children: ReactNode }) => {
         return 0;
       });
     
-    // Weekly tasks - due this week, not including daily tasks
     const weeklyTasks = tasksWithProperDates
       .filter(task => {
         const taskDate = new Date(task.deadline);
@@ -966,7 +959,6 @@ export const TaskProvider = ({ children }: { children: ReactNode }) => {
       })
       .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime());
     
-    // Monthly tasks - due this month, not including weekly or daily tasks
     const monthlyTasks = tasksWithProperDates
       .filter(task => {
         const taskDate = new Date(task.deadline);
@@ -977,7 +969,6 @@ export const TaskProvider = ({ children }: { children: ReactNode }) => {
       })
       .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime());
     
-    // Generate natural language suggestions
     const dailySuggestions = dailyTasks.map(task => {
       const taskDate = new Date(task.deadline);
       const isToday = taskDate.getDate() === today.getDate() && 
@@ -1018,29 +1009,24 @@ export const TaskProvider = ({ children }: { children: ReactNode }) => {
   const getMoodBasedSuggestions = (): Task[] => {
     const incompleteTasks = tasks.filter(task => !task.completed);
     
-    // First, get tasks that match the current mood
     const moodMatchingTasks = incompleteTasks.filter(task => 
       task.mood && task.mood === currentMood
     );
     
-    // If we have enough mood-matching tasks, return those
     if (moodMatchingTasks.length >= 3) {
       return moodMatchingTasks.slice(0, 3);
     }
     
-    // Otherwise, fill in with high priority tasks
     const highPriorityTasks = incompleteTasks
       .filter(task => task.priority === 'high' && (!task.mood || task.mood !== currentMood))
       .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime());
     
     const result = [...moodMatchingTasks];
     
-    // Add high priority tasks until we have 3 or run out
     for (let i = 0; i < highPriorityTasks.length && result.length < 3; i++) {
       result.push(highPriorityTasks[i]);
     }
     
-    // If we still need more, add medium priority tasks
     if (result.length < 3) {
       const mediumPriorityTasks = incompleteTasks
         .filter(task => 
@@ -1089,7 +1075,6 @@ export const TaskProvider = ({ children }: { children: ReactNode }) => {
       project.id === id ? { ...project, completed: true, completedAt: new Date() } : project
     ));
     
-    // Complete all tasks associated with this project
     setTasks(prev => prev.map(task => 
       task.projectId === id ? { ...task, completed: true, completedAt: new Date() } : task
     ));
@@ -1098,11 +1083,7 @@ export const TaskProvider = ({ children }: { children: ReactNode }) => {
   };
   
   const deleteProject = (id: string) => {
-    // Ask if user wants to delete associated tasks or reassign them
-    const projectTasks = tasks.filter(task => task.projectId === id);
-    
-    if (projectTasks.length > 0) {
-      // For now, just remove the project ID from these tasks
+    if (tasks.some(task => task.projectId === id)) {
       setTasks(prev => prev.map(task => 
         task.projectId === id ? { ...task, projectId: undefined } : task
       ));
