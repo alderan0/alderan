@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,11 +8,14 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useNavigate } from "react-router-dom";
+
 const AuthPage = () => {
   const {
     login,
     signup,
-    isLoading
+    isLoading,
+    isAuthenticated
   } = useAuth();
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
@@ -19,6 +23,15 @@ const AuthPage = () => {
   const [signupEmail, setSignupEmail] = useState("");
   const [signupPassword, setSignupPassword] = useState("");
   const [error, setError] = useState("");
+  const navigate = useNavigate();
+
+  // Redirect authenticated users to app
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/app');
+    }
+  }, [isAuthenticated, navigate]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -29,9 +42,11 @@ const AuthPage = () => {
     try {
       await login(loginEmail, loginPassword);
     } catch (err) {
+      console.error("Login error:", err);
       setError("Login failed. Please check your credentials.");
     }
   };
+  
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -39,12 +54,18 @@ const AuthPage = () => {
       setError("Please fill in all fields");
       return;
     }
+    if (signupPassword.length < 6) {
+      setError("Password must be at least 6 characters");
+      return;
+    }
     try {
       await signup(signupUsername, signupEmail, signupPassword);
     } catch (err) {
+      console.error("Signup error:", err);
       setError("Signup failed. Please try again.");
     }
   };
+  
   return <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-background to-alderan-sand p-4">
       <div className="max-w-md w-full">
         <div className="flex flex-col items-center mb-8">
@@ -90,8 +111,6 @@ const AuthPage = () => {
                   </Button>
                 </CardFooter>
               </form>
-              
-              
             </Card>
           </TabsContent>
           
@@ -131,4 +150,5 @@ const AuthPage = () => {
       </div>
     </div>;
 };
+
 export default AuthPage;
