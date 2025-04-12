@@ -2,16 +2,18 @@ import { useState } from "react";
 import { useTasks } from "@/context/TaskContext";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Calendar, CheckCircle, Trash2 } from "lucide-react";
+import { PlusCircle, Calendar, CheckCircle, Sparkle } from "lucide-react";
 import { formatDistanceToNow } from "@/lib/utils";
 import { AddProjectDialog } from "@/components/projects/AddProjectDialog";
+import { GenerateProjectDialog } from "@/components/projects/GenerateProjectDialog";
 import { ProjectDetail } from "@/components/projects/ProjectDetail";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
 const ProjectsPage = () => {
   const { projects } = useTasks();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isGenerateDialogOpen, setIsGenerateDialogOpen] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const isMobile = useIsMobile();
 
@@ -38,10 +40,16 @@ const ProjectsPage = () => {
           <h1 className="text-2xl font-bold">Projects</h1>
           <p className="text-muted-foreground">Manage and track your coding projects</p>
         </div>
-        <Button onClick={() => setIsDialogOpen(true)} className="gap-2">
-          <PlusCircle className="h-4 w-4" />
-          New Project
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={() => setIsGenerateDialogOpen(true)} variant="outline" className="gap-2">
+            <Sparkle className="h-4 w-4 text-purple-500" />
+            AI Generate
+          </Button>
+          <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
+            <PlusCircle className="h-4 w-4" />
+            New Project
+          </Button>
+        </div>
       </div>
 
       <div className="space-y-8">
@@ -148,8 +156,13 @@ const ProjectsPage = () => {
       </div>
 
       <AddProjectDialog 
-        open={isDialogOpen} 
-        onOpenChange={setIsDialogOpen}
+        open={isAddDialogOpen} 
+        onOpenChange={setIsAddDialogOpen}
+      />
+      
+      <GenerateProjectDialog
+        open={isGenerateDialogOpen}
+        onOpenChange={setIsGenerateDialogOpen}
       />
     </div>
   );

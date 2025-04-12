@@ -12,8 +12,15 @@ import LandingPage from "@/pages/LandingPage";
 import { Toaster } from "@/components/ui/toaster";
 import { TaskProvider } from "@/context/TaskContext";
 import { TreeProvider } from "@/context/TreeContext";
+import { useEffect } from "react";
+import { loadSampleData } from "@/utils/sampleData";
 
 function App() {
+  useEffect(() => {
+    // Load sample data when the app starts
+    loadSampleData();
+  }, []);
+  
   return (
     <Router>
       <AuthProvider>

@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar as CalendarIcon } from "lucide-react";
+import { Calendar as CalendarIcon, Sparkle } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
@@ -50,7 +50,7 @@ export const AddProjectDialog = ({ open, onOpenChange }: AddProjectDialogProps) 
     
     onOpenChange(false);
   };
-  
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
@@ -106,8 +106,12 @@ export const AddProjectDialog = ({ open, onOpenChange }: AddProjectDialogProps) 
             </Popover>
           </div>
         </div>
-        <DialogFooter>
-          <Button onClick={handleSubmit} disabled={!name.trim()}>
+        <DialogFooter className="flex flex-col sm:flex-row gap-2">
+          <Button 
+            onClick={handleSubmit} 
+            disabled={!name.trim()}
+            className="w-full"
+          >
             Create Project
           </Button>
         </DialogFooter>

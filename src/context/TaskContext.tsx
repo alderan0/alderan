@@ -1,4 +1,89 @@
 
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { v4 as uuidv4 } from 'uuid';
+
+// Task-related type definitions
+export interface NewTaskInput {
+  name: string;
+  description?: string;
+  deadline: Date;
+  estimatedTime: number;
+  mood?: string;
+  projectId?: string;
+}
+
+export interface Task {
+  id: string;
+  name: string;
+  description?: string;
+  deadline: Date;
+  completed: boolean;
+  estimatedTime: number;
+  actualTime?: number;
+  priority?: number;
+  difficulty?: number;
+  mood?: string;
+  projectId?: string;
+  createdAt: Date;
+  completedAt?: Date;
+}
+
+export interface Subtask {
+  id: string;
+  name: string;
+  completed: boolean;
+  taskId: string;
+}
+
+export interface Project {
+  id: string;
+  name: string;
+  description?: string;
+  deadline?: Date;
+  completed: boolean;
+  createdAt: Date;
+  completedAt?: Date;
+  tasks?: Task[];
+}
+
+export interface Tool {
+  id: string;
+  name: string;
+  type: string;
+  description?: string;
+  isActive: boolean;
+}
+
+export interface NewProjectInput {
+  name: string;
+  description?: string;
+  deadline?: Date;
+}
+
+// The context state interface
+interface TaskContextState {
+  tasks: Task[];
+  projects: Project[];
+  tools: Tool[];
+  currentMood: string;
+  suggestedTasks: Task[];
+  addTask: (task: NewTaskInput) => void;
+  completeTask: (id: string, actualTime: number) => void;
+  deleteTask: (id: string) => void;
+  setTaskDifficulty: (id: string, difficulty: 'easy' | 'medium' | 'hard') => void;
+  addProject: (project: NewProjectInput) => void;
+  completeProject: (id: string) => void;
+  deleteProject: (id: string) => void;
+  setMood: (mood: string) => void;
+  deleteCompletedTasks: (useForAITraining?: boolean) => void;
+  updateAITrainingPreference: (useForTraining: boolean) => void;
+  generateProjectFromRequirements: (requirements: string) => Promise<void>;
+}
+
+// Create the context with a default undefined value
+const TaskContext = createContext<TaskContextState | undefined>(undefined);
+
+// Calculate task priority based on various factors
 const calculatePriority = (task: NewTaskInput, tasks: Task[], currentMood: string): number => {
   const now = new Date().getTime();
   const deadlineDate = new Date(task.deadline).getTime();
@@ -25,4 +110,235 @@ const calculatePriority = (task: NewTaskInput, tasks: Task[], currentMood: strin
   }
   
   return Math.floor((deadlineScore * 0.4) + (timeScore * 0.3) + (moodScore * 0.3));
+};
+
+// Hook for adding to local storage
+const useLocalStorage = <T,>(key: string, initialValue: T) => {
+  const [storedValue, setStoredValue] = useState<T>(() => {
+    if (typeof window === "undefined") {
+      return initialValue;
+    }
+    try {
+      const item = window.localStorage.getItem(key);
+      return item ? JSON.parse(item) : initialValue;
+    } catch (error) {
+      console.log(error);
+      return initialValue;
+    }
+  });
+
+  const setValue = (value: T | ((val: T) => T)) => {
+    try {
+      const valueToStore = value instanceof Function ? value(storedValue) : value;
+      setStoredValue(valueToStore);
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(key, JSON.stringify(valueToStore));
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  return [storedValue, setValue] as const;
+};
+
+// TaskProvider component
+export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [tasks, setTasks] = useLocalStorage<Task[]>("tasks", []);
+  const [projects, setProjects] = useLocalStorage<Project[]>("projects", []);
+  const [tools, setTools] = useLocalStorage<Tool[]>("tools", []);
+  const [currentMood, setCurrentMood] = useLocalStorage<string>("currentMood", "Focused");
+  const [useAITraining, setUseAITraining] = useLocalStorage<boolean>("useAITraining", true);
+
+  // Get suggested tasks based on priority and current mood
+  const suggestedTasks = tasks
+    .filter(task => !task.completed)
+    .sort((a, b) => (b.priority || 0) - (a.priority || 0))
+    .slice(0, 3);
+
+  // Add a new task
+  const addTask = (taskInput: NewTaskInput) => {
+    const now = new Date();
+    const newTask: Task = {
+      id: uuidv4(),
+      name: taskInput.name,
+      description: taskInput.description,
+      deadline: taskInput.deadline,
+      completed: false,
+      estimatedTime: Number(taskInput.estimatedTime),
+      mood: taskInput.mood,
+      projectId: taskInput.projectId,
+      createdAt: now,
+      priority: calculatePriority(taskInput, tasks, currentMood)
+    };
+
+    setTasks(prevTasks => [...prevTasks, newTask]);
+  };
+
+  // Complete a task
+  const completeTask = (id: string, actualTime: number) => {
+    setTasks(prevTasks =>
+      prevTasks.map(task =>
+        task.id === id
+          ? { ...task, completed: true, completedAt: new Date(), actualTime }
+          : task
+      )
+    );
+  };
+
+  // Delete a task
+  const deleteTask = (id: string) => {
+    setTasks(prevTasks => prevTasks.filter(task => task.id !== id));
+  };
+
+  // Set task difficulty
+  const setTaskDifficulty = (id: string, difficulty: 'easy' | 'medium' | 'hard') => {
+    const difficultyMap = {
+      easy: 30,
+      medium: 60,
+      hard: 90
+    };
+
+    setTasks(prevTasks =>
+      prevTasks.map(task =>
+        task.id === id ? { ...task, difficulty: difficultyMap[difficulty] } : task
+      )
+    );
+  };
+
+  // Add a new project
+  const addProject = (projectInput: NewProjectInput) => {
+    const newProject: Project = {
+      id: uuidv4(),
+      name: projectInput.name,
+      description: projectInput.description,
+      deadline: projectInput.deadline,
+      completed: false,
+      createdAt: new Date()
+    };
+
+    setProjects(prevProjects => [...prevProjects, newProject]);
+  };
+
+  // Complete a project
+  const completeProject = (id: string) => {
+    setProjects(prevProjects =>
+      prevProjects.map(project =>
+        project.id === id
+          ? { ...project, completed: true, completedAt: new Date() }
+          : project
+      )
+    );
+
+    // Also complete all tasks in the project
+    setTasks(prevTasks =>
+      prevTasks.map(task =>
+        task.projectId === id && !task.completed
+          ? { ...task, completed: true, completedAt: new Date() }
+          : task
+      )
+    );
+  };
+
+  // Delete a project
+  const deleteProject = (id: string) => {
+    setProjects(prevProjects => prevProjects.filter(project => project.id !== id));
+    
+    // Also delete all tasks in the project
+    setTasks(prevTasks => prevTasks.filter(task => task.projectId !== id));
+  };
+
+  // Set the current mood
+  const setMood = (mood: string) => {
+    setCurrentMood(mood);
+  };
+
+  // Delete completed tasks
+  const deleteCompletedTasks = (useForAITraining = true) => {
+    setTasks(prevTasks => prevTasks.filter(task => !task.completed));
+  };
+
+  // Update AI training preference
+  const updateAITrainingPreference = (useForTraining: boolean) => {
+    setUseAITraining(useForTraining);
+  };
+
+  // Generate a project and tasks from requirements using AI
+  const generateProjectFromRequirements = async (requirements: string) => {
+    try {
+      // Mock implementation for generating projects from AI
+      console.log("Generating project from requirements:", requirements);
+      
+      // Create a new project based on the requirements
+      const projectName = requirements.split('\n')[0] || "New AI Generated Project";
+      const projectDesc = "AI generated project based on requirements";
+      
+      const newProject: Project = {
+        id: uuidv4(),
+        name: projectName,
+        description: projectDesc,
+        completed: false,
+        createdAt: new Date()
+      };
+      
+      // Add the project
+      setProjects(prev => [...prev, newProject]);
+      
+      // Generate some mock tasks based on requirements
+      const keyPhrases = requirements.split('\n')
+        .filter(line => line.trim().length > 10)
+        .slice(0, 5);
+      
+      const newTasks: Task[] = keyPhrases.map((phrase, index) => ({
+        id: uuidv4(),
+        name: `Task ${index + 1}: ${phrase.slice(0, 30)}...`,
+        description: phrase,
+        deadline: new Date(Date.now() + (index + 1) * 86400000),
+        completed: false,
+        estimatedTime: 60 + index * 30,
+        priority: 80 - index * 10,
+        projectId: newProject.id,
+        createdAt: new Date()
+      }));
+      
+      // Add the tasks
+      setTasks(prev => [...prev, ...newTasks]);
+      
+      return Promise.resolve();
+    } catch (error) {
+      console.error("Error generating project from requirements:", error);
+      return Promise.reject(error);
+    }
+  };
+
+  // Provide the context value
+  const value = {
+    tasks,
+    projects,
+    tools,
+    currentMood,
+    suggestedTasks,
+    addTask,
+    completeTask,
+    deleteTask,
+    setTaskDifficulty,
+    addProject,
+    completeProject,
+    deleteProject,
+    setMood,
+    deleteCompletedTasks,
+    updateAITrainingPreference,
+    generateProjectFromRequirements
+  };
+
+  return <TaskContext.Provider value={value}>{children}</TaskContext.Provider>;
+};
+
+// Custom hook for using the task context
+export const useTasks = () => {
+  const context = useContext(TaskContext);
+  if (context === undefined) {
+    throw new Error('useTasks must be used within a TaskProvider');
+  }
+  return context;
 };
