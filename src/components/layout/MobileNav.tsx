@@ -1,6 +1,6 @@
 
 import { Link, useLocation } from "react-router-dom";
-import { Home, FolderKanban, Tree, Users } from "lucide-react";
+import { Home, FolderKanban, Trees, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
@@ -16,7 +16,7 @@ const NAV_ITEMS = [
   },
   {
     label: "Tree",
-    icon: Tree,
+    icon: Trees,
     href: "/app/tree"
   },
   {

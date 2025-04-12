@@ -26,6 +26,7 @@ export interface Task {
   projectId?: string;
   createdAt: Date;
   completedAt?: Date;
+  subtasks: Subtask[];
 }
 
 export interface Subtask {
@@ -52,6 +53,9 @@ export interface Tool {
   type: string;
   description?: string;
   isActive: boolean;
+  used?: boolean;
+  effect?: string;
+  minLevel?: number;
 }
 
 export interface NewProjectInput {
@@ -69,7 +73,7 @@ interface TaskContextState {
   suggestedTasks: Task[];
   addTask: (task: NewTaskInput) => void;
   completeTask: (id: string, actualTime: number) => void;
-  deleteTask: (id: string) => void;
+  deleteTask: (id: string, useForTraining?: boolean) => void;
   setTaskDifficulty: (id: string, difficulty: 'easy' | 'medium' | 'hard') => void;
   addProject: (project: NewProjectInput) => void;
   completeProject: (id: string) => void;
@@ -78,6 +82,16 @@ interface TaskContextState {
   deleteCompletedTasks: (useForAITraining?: boolean) => void;
   updateAITrainingPreference: (useForTraining: boolean) => void;
   generateProjectFromRequirements: (requirements: string) => Promise<void>;
+  addSubtask: (taskId: string, subtaskName: string) => void;
+  completeSubtask: (taskId: string, subtaskId: string) => void;
+  deleteSubtask: (taskId: string, subtaskId: string) => void;
+  getProjectResources: (projectId: string) => any[];
+  getTaskStats: () => any;
+  getAIScheduleSuggestions: () => any[];
+  habits: any[];
+  getMoodBasedSuggestions: () => any[];
+  setCurrentMood: (mood: string) => void;
+  prioritizeTasks: () => void;
 }
 
 // Create the context with a default undefined value
@@ -149,6 +163,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [tools, setTools] = useLocalStorage<Tool[]>("tools", []);
   const [currentMood, setCurrentMood] = useLocalStorage<string>("currentMood", "Focused");
   const [useAITraining, setUseAITraining] = useLocalStorage<boolean>("useAITraining", true);
+  const [habits, setHabits] = useLocalStorage<any[]>("habits", []);
 
   // Get suggested tasks based on priority and current mood
   const suggestedTasks = tasks
@@ -169,7 +184,8 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
       mood: taskInput.mood,
       projectId: taskInput.projectId,
       createdAt: now,
-      priority: calculatePriority(taskInput, tasks, currentMood)
+      priority: calculatePriority(taskInput, tasks, currentMood),
+      subtasks: []
     };
 
     setTasks(prevTasks => [...prevTasks, newTask]);
@@ -187,7 +203,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // Delete a task
-  const deleteTask = (id: string) => {
+  const deleteTask = (id: string, useForTraining?: boolean) => {
     setTasks(prevTasks => prevTasks.filter(task => task.id !== id));
   };
 
@@ -263,6 +279,145 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUseAITraining(useForTraining);
   };
 
+  // Add a subtask to a task
+  const addSubtask = (taskId: string, subtaskName: string) => {
+    setTasks(prevTasks =>
+      prevTasks.map(task => {
+        if (task.id === taskId) {
+          const newSubtask = {
+            id: uuidv4(),
+            name: subtaskName,
+            completed: false,
+            taskId
+          };
+          return {
+            ...task,
+            subtasks: [...(task.subtasks || []), newSubtask]
+          };
+        }
+        return task;
+      })
+    );
+  };
+
+  // Complete a subtask
+  const completeSubtask = (taskId: string, subtaskId: string) => {
+    setTasks(prevTasks =>
+      prevTasks.map(task => {
+        if (task.id === taskId) {
+          return {
+            ...task,
+            subtasks: (task.subtasks || []).map(subtask =>
+              subtask.id === subtaskId ? { ...subtask, completed: true } : subtask
+            )
+          };
+        }
+        return task;
+      })
+    );
+  };
+
+  // Delete a subtask
+  const deleteSubtask = (taskId: string, subtaskId: string) => {
+    setTasks(prevTasks =>
+      prevTasks.map(task => {
+        if (task.id === taskId) {
+          return {
+            ...task,
+            subtasks: (task.subtasks || []).filter(subtask => subtask.id !== subtaskId)
+          };
+        }
+        return task;
+      })
+    );
+  };
+
+  // Get project resources (mock data)
+  const getProjectResources = (projectId: string) => {
+    // Return mock data for now
+    return [
+      {
+        id: '1',
+        name: 'React Documentation',
+        description: 'Official React documentation',
+        type: 'resource',
+        url: 'https://reactjs.org'
+      },
+      {
+        id: '2',
+        name: 'VS Code',
+        description: 'Code editor for project development',
+        type: 'app',
+        url: 'https://code.visualstudio.com'
+      }
+    ];
+  };
+
+  // Get task statistics (mock data)
+  const getTaskStats = () => {
+    return {
+      completionRate: 0.75,
+      averageCompletionTime: 45,
+      productivityScore: 'B+',
+      highPriorityTasks: 3
+    };
+  };
+
+  // Get AI schedule suggestions (mock data)
+  const getAIScheduleSuggestions = () => {
+    return [
+      {
+        id: '1',
+        title: 'Morning Focus Block',
+        description: 'Complete high-priority tasks when energy is highest',
+        tasks: ['Task 1', 'Task 2']
+      },
+      {
+        id: '2',
+        title: 'Afternoon Creative Session',
+        description: 'Work on creative tasks after lunch',
+        tasks: ['Task 3', 'Task 4']
+      }
+    ];
+  };
+
+  // Get mood-based suggestions
+  const getMoodBasedSuggestions = () => {
+    // Mock suggestions based on current mood
+    switch (currentMood) {
+      case 'Focused':
+        return [
+          { id: '1', type: 'task', title: 'Deep work session', description: 'Block 90 minutes for focused work' },
+          { id: '2', type: 'resource', title: 'Flow state playlist', description: 'Background music for concentration' }
+        ];
+      case 'Creative':
+        return [
+          { id: '3', type: 'task', title: 'Brainstorming session', description: 'Generate new ideas for projects' },
+          { id: '4', type: 'tool', title: 'Mind mapping tool', description: 'Visualize your thoughts' }
+        ];
+      default:
+        return [];
+    }
+  };
+
+  // Prioritize tasks based on current mood and deadlines
+  const prioritizeTasks = () => {
+    setTasks(prevTasks => 
+      prevTasks.map(task => {
+        if (!task.completed) {
+          return { ...task, priority: calculatePriority({
+            name: task.name,
+            deadline: task.deadline,
+            estimatedTime: task.estimatedTime,
+            mood: task.mood,
+            projectId: task.projectId
+          }, tasks, currentMood) };
+        }
+        return task;
+      })
+    );
+  };
+
   // Generate a project and tasks from requirements using AI
   const generateProjectFromRequirements = async (requirements: string) => {
     try {
@@ -298,7 +453,8 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
         estimatedTime: 60 + index * 30,
         priority: 80 - index * 10,
         projectId: newProject.id,
-        createdAt: new Date()
+        createdAt: new Date(),
+        subtasks: []
       }));
       
       // Add the tasks
@@ -318,6 +474,7 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     tools,
     currentMood,
     suggestedTasks,
+    habits,
     addTask,
     completeTask,
     deleteTask,
@@ -326,9 +483,18 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
     completeProject,
     deleteProject,
     setMood,
+    setCurrentMood: setMood,
     deleteCompletedTasks,
     updateAITrainingPreference,
-    generateProjectFromRequirements
+    generateProjectFromRequirements,
+    addSubtask,
+    completeSubtask,
+    deleteSubtask,
+    getProjectResources,
+    getTaskStats,
+    getAIScheduleSuggestions,
+    getMoodBasedSuggestions,
+    prioritizeTasks
   };
 
   return <TaskContext.Provider value={value}>{children}</TaskContext.Provider>;
