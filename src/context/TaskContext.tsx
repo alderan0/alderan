@@ -93,7 +93,7 @@ interface TaskContextState {
   deleteSubtask: (taskId: string, subtaskId: string) => void;
   getProjectResources: (projectId: string) => any[];
   getTaskStats: () => any;
-  getAIScheduleSuggestions: () => any[];
+  getAIScheduleSuggestions: () => { daily: string[], weekly: string[], monthly: string[] };
   habits: any[];
   getMoodBasedSuggestions: () => any[];
   setCurrentMood: (mood: string) => void;
@@ -371,20 +371,23 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Get AI schedule suggestions (mock data)
   const getAIScheduleSuggestions = () => {
-    return [
-      {
-        id: '1',
-        title: 'Morning Focus Block',
-        description: 'Complete high-priority tasks when energy is highest',
-        tasks: ['Task 1', 'Task 2']
-      },
-      {
-        id: '2',
-        title: 'Afternoon Creative Session',
-        description: 'Work on creative tasks after lunch',
-        tasks: ['Task 3', 'Task 4']
-      }
-    ];
+    return {
+      daily: [
+        "Complete the high-priority task 'Fix cross-browser compatibility issues'",
+        "Take a 15-minute break every 90 minutes to maintain focus",
+        "Start your morning with a 30-minute 'deep work' session on the most challenging task"
+      ],
+      weekly: [
+        "Schedule a review session to consolidate your learning from Tailwind CSS",
+        "Allocate time for refactoring code on Friday afternoons",
+        "Plan one learning session for new technologies or frameworks"
+      ],
+      monthly: [
+        "Review completed projects to identify patterns and improvements",
+        "Set aside time to contribute to open-source projects related to your skills",
+        "Schedule a planning session to map out goals for the next month"
+      ]
+    };
   };
 
   // Get mood-based suggestions
