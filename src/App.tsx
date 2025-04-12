@@ -45,8 +45,12 @@ function App() {
             <Route index element={<Navigate to="/app/tasks" replace />} />
             <Route path="tasks" element={<TasksPage />} />
             <Route path="projects" element={<ProjectsPage />} />
-            <Route path="community" element={<CommunityPage />} />
             <Route path="tree" element={<TreePage />} />
+            <Route path="community" element={<CommunityPage />} />
+            <Route path="settings" element={<div className="p-8">
+              <h1 className="text-2xl font-bold">Settings</h1>
+              <p className="text-muted-foreground mt-2">App settings will appear here.</p>
+            </div>} />
           </Route>
 
           {/* Catch all */}

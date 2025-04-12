@@ -34,6 +34,12 @@ export const GenerateProjectDialog = ({ open, onOpenChange }: GenerateProjectDia
     setIsLoading(true);
     
     try {
+      // Check if OPENAI_API_KEY is properly configured in Supabase
+      const enableAIFeatures = import.meta.env.VITE_ENABLE_AI_FEATURES;
+      if (enableAIFeatures !== 'true') {
+        throw new Error("AI features are not enabled for this project");
+      }
+      
       // Call the OpenAI edge function to process the PRD
       const { data, error } = await supabase.functions.invoke('openai-assistant', {
         body: { 
@@ -43,8 +49,11 @@ export const GenerateProjectDialog = ({ open, onOpenChange }: GenerateProjectDia
       });
       
       if (error) {
-        throw new Error(error.message);
+        console.error("Supabase function error:", error);
+        throw new Error(error.message || "Error calling AI service");
       }
+      
+      console.log("AI response:", data);
       
       if (!data || !data.parsedTasks || data.parsedTasks.length === 0) {
         throw new Error("Could not generate tasks from the PRD. Please try again with more detailed requirements.");
@@ -66,7 +75,7 @@ export const GenerateProjectDialog = ({ open, onOpenChange }: GenerateProjectDia
       onOpenChange(false);
     } catch (error) {
       console.error("Error generating project:", error);
-      toast.error("Failed to generate project. Please try again.");
+      toast.error(`Failed to generate project: ${error.message || "Please try again"}`);
     } finally {
       setIsLoading(false);
     }

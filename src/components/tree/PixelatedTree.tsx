@@ -1,349 +1,201 @@
 
-import React, { useMemo } from "react";
 import { useTree } from "@/context/TreeContext";
-import { Card, CardContent } from "@/components/ui/card";
-import { PixelTreeReward } from "@/context/TreeContext";
-import { Button } from "@/components/ui/button";
-import { 
-  Droplet, 
-  Leaf, 
-  Heart,
-  Sparkles,
-  Award,
-  Gift,
-  Ruler
-} from "lucide-react";
-import { 
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuTrigger,
-} from "@/components/ui/context-menu";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Badge } from "@/components/ui/badge";
+import { useEffect, useState } from "react";
+import { Sparkle, Leaf, Flame } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export const PixelatedTree = () => {
-  const { tree, applyReward } = useTree();
-  
-  // Safely handle rewards - Add null check before filtering
-  const unusedRewards = useMemo(() => {
-    return tree?.rewards?.filter(reward => !reward.used) || [];
-  }, [tree?.rewards]);
-  
-  const growthRewards = useMemo(() => {
-    return unusedRewards.filter(reward => reward.type === "growth");
-  }, [unusedRewards]);
-  
-  const decorationRewards = useMemo(() => {
-    return unusedRewards.filter(reward => reward.type === "decoration");
-  }, [unusedRewards]);
-  
-  // Function to get color based on rarity
-  const getRarityColor = (rarity: string) => {
-    switch(rarity) {
-      case "common": return "bg-slate-200 text-slate-700";
-      case "uncommon": return "bg-green-100 text-green-800";
-      case "rare": return "bg-blue-100 text-blue-800";
-      case "exquisite": return "bg-purple-100 text-purple-800";
-      default: return "bg-slate-200 text-slate-700";
+  const { tree } = useTree();
+  const [animation, setAnimation] = useState<string | null>(null);
+  const [lastEffect, setLastEffect] = useState<string | null>(null);
+
+  // Get visual effects from the tree
+  const { leafColor, trunkColor, special } = tree.visualEffects || { 
+    leafColor: 'green', 
+    trunkColor: 'brown'
+  };
+
+  // Watch for changes in tree height or leaves to trigger animations
+  useEffect(() => {
+    const handleTreeChange = () => {
+      if (lastEffect === 'growTaller') {
+        setAnimation('grow');
+        setTimeout(() => setAnimation(null), 2000);
+      } else if (lastEffect === 'addLeaves') {
+        setAnimation('leaves');
+        setTimeout(() => setAnimation(null), 2000);
+      } else if (lastEffect === 'healthGlow') {
+        setAnimation('health');
+        setTimeout(() => setAnimation(null), 2000);
+      } else if (lastEffect === 'rainbowLeaves') {
+        setAnimation('rainbow');
+        setTimeout(() => setAnimation(null), 2000);
+      } else if (lastEffect === 'goldenTrunk') {
+        setAnimation('gold');
+        setTimeout(() => setAnimation(null), 2000);
+      } else if (lastEffect === 'superGrow') {
+        setAnimation('superGrow');
+        setTimeout(() => setAnimation(null), 2500);
+      } else if (lastEffect === 'magicAura') {
+        setAnimation('aura');
+        setTimeout(() => setAnimation(null), 2500);
+      }
+      setLastEffect(null);
+    };
+
+    if (lastEffect) {
+      handleTreeChange();
     }
+  }, [lastEffect]);
+
+  // Calculate tree size based on height
+  const treeHeight = Math.min(400, Math.max(50, tree.height * 50));
+  const trunkHeight = Math.floor(treeHeight * 0.6);
+  const trunkWidth = Math.floor(treeHeight * 0.15);
+  const leavesSize = Math.min(250, Math.floor(treeHeight * 0.8));
+
+  // Generate leaves based on count
+  const getLeaves = () => {
+    const numberOfLeaves = tree.leaves;
+    const leaves = [];
+    
+    const baseSize = Math.max(12, Math.min(20, leavesSize / 10));
+    
+    for (let i = 0; i < numberOfLeaves; i++) {
+      const size = baseSize + Math.random() * 10;
+      const top = Math.random() * leavesSize * 0.8;
+      const left = Math.random() * leavesSize;
+      const rotation = Math.random() * 360;
+      const delay = Math.random() * 0.5;
+      
+      leaves.push(
+        <Leaf
+          key={i}
+          className={cn(
+            "absolute transform transition-all duration-300",
+            getLeafColor(leafColor),
+            animation === 'leaves' && "animate-bounce",
+            animation === 'rainbow' && "animate-pulse"
+          )}
+          style={{
+            top: `${top}px`,
+            left: `${left}px`,
+            width: `${size}px`,
+            height: `${size}px`,
+            transform: `rotate(${rotation}deg)`,
+            animationDelay: `${delay}s`
+          }}
+        />
+      );
+    }
+    return leaves;
   };
   
-  // Function to get tailwind class for the tree based on its size
-  const getTreeSizeClass = () => {
-    if (!tree) return "h-24";
-    if (tree.height < 2) return "h-24";
-    if (tree.height < 5) return "h-32";
-    return "h-40";
-  };
-  
-  // Function to get tailwind classes for the tree appearance
-  const getTreeAppearanceClasses = () => {
-    if (!tree || !tree.styles) {
-      return "mx-auto transition-all duration-500 bg-gradient-to-tr from-green-600 to-lime-400 shadow-md shadow-green-800/20";
-    }
-    
-    const baseClasses = "mx-auto transition-all duration-500";
-    let styleClasses = "";
-    
-    // Rainbow leaves effect
-    if (tree.styles.special.includes('rainbow')) {
-      return `${baseClasses} bg-gradient-to-tr from-red-500 via-yellow-400 via-green-500 via-blue-500 to-purple-600 shadow-xl shadow-rainbow/20`;
-    }
-    
-    // Leaf style
-    switch(tree.styles.leafStyle) {
-      case "syntax":
-        styleClasses += " bg-gradient-to-tr from-green-700 to-emerald-400";
-        break;
-      case "pixel":
-        styleClasses += " bg-gradient-to-tr from-emerald-600 to-green-400";
-        break;
-      case "binary":
-        styleClasses += " bg-gradient-to-tr from-green-900 to-emerald-600";
-        break;
+  // Get color based on leaf type
+  const getLeafColor = (color: string | undefined) => {
+    switch(color) {
+      case 'rainbow':
+        return 'text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-green-500 to-blue-500 fill-current';
+      case 'gold':
+        return 'text-yellow-500';
       default:
-        styleClasses += " bg-gradient-to-tr from-green-600 to-lime-400";
+        return 'text-green-500';
     }
-    
-    // Lighting effects
-    switch(tree.styles.lighting) {
-      case "nightmode":
-        styleClasses += " shadow-lg shadow-blue-700/30";
-        break;
-      case "lofi":
-        styleClasses += " shadow-md shadow-slate-400/50";
-        break;
-      case "loops":
-        styleClasses += " shadow-xl shadow-amber-400/30";
-        break;
+  };
+  
+  // Get trunk color based on type
+  const getTrunkColor = (color: string | undefined) => {
+    switch(color) {
+      case 'gold':
+        return 'bg-gradient-to-b from-yellow-300 to-yellow-600';
       default:
-        styleClasses += " shadow-md shadow-green-800/20";
+        return 'bg-gradient-to-b from-amber-700 to-amber-900';
     }
-    
-    return `${baseClasses} ${styleClasses}`;
   };
-  
-  // Pixel art representation of the tree
-  const renderPixelatedTree = () => {
-    const leaves = Math.min(100, tree?.leaves || 0);
-    const health = tree?.health || 0;
-    
-    let leafColor = "bg-emerald-300";
-    if (health < 30) leafColor = "bg-yellow-300";
-    if (health < 15) leafColor = "bg-orange-300";
-    
-    // Create unique tree patterns based on applied decorations and growth promoters
-    const hasSpecialFunctions = tree?.styles?.special?.includes('functions') || false;
-    const hasSpecialBirds = tree?.styles?.special?.includes('birds') || false;
-    const hasSpecialRecursive = tree?.styles?.special?.includes('recursive') || false;
-    const hasRainbowLeaves = tree?.styles?.special?.includes('rainbow') || false;
-    const decorationsCount = tree?.decorations?.length || 0;
-    
-    // Determine trunk height based on tree height in meters
-    const trunkHeight = tree?.height ? `${Math.min(36, 16 + tree.height * 5)}px` : '16px';
-    
-    // Determine foliage size based on tree height and leaves
-    const foliageSize = tree?.height ? 
-      { width: `${Math.min(160, 80 + tree.height * 10)}px`, height: `${Math.min(200, 80 + tree.height * 15)}px` } : 
-      { width: '80px', height: '80px' };
-    
-    return (
-      <div className="flex flex-col items-center justify-end h-60 relative">
-        {/* Tree trunk */}
-        <div className={`w-6 bg-amber-800 rounded-sm`} style={{ height: trunkHeight }}></div>
-        
-        {/* Tree leaves - pixelated style */}
-        <div className="absolute bottom-16 flex flex-col items-center">
-          {/* Base large leaf area */}
-          <div 
-            className={`${getTreeAppearanceClasses()} rounded-lg`} 
-            style={{ 
-              clipPath: "polygon(50% 0%, 100% 70%, 80% 100%, 20% 100%, 0% 70%)",
-              width: foliageSize.width,
-              height: foliageSize.height
-            }}
-          >
-            {/* Pixelated overlay pattern */}
-            <div className="w-full h-full grid grid-cols-8 grid-rows-8 opacity-30">
-              {Array.from({ length: 64 }).map((_, i) => (
-                <div 
-                  key={i} 
-                  className={`${Math.random() > 0.7 ? 'bg-white/20' : 'bg-transparent'}`}
-                ></div>
-              ))}
-            </div>
-          </div>
-          
-          {/* Rainbow leaves effect */}
-          {hasRainbowLeaves && (
-            <div className="absolute inset-0 pointer-events-none">
-              <div className="animate-pulse-slow opacity-70">
-                {Array.from({ length: 20 }).map((_, i) => (
-                  <div 
-                    key={i}
-                    className="absolute rounded-full mix-blend-overlay"
-                    style={{
-                      width: `${Math.random() * 10 + 5}px`,
-                      height: `${Math.random() * 10 + 5}px`,
-                      top: `${Math.random() * 80}%`,
-                      left: `${Math.random() * 80 + 10}%`,
-                      background: ['#ff0000', '#ff7700', '#ffff00', '#00ff00', '#0000ff', '#8a2be2'][Math.floor(Math.random() * 6)]
-                    }}
-                  ></div>
-                ))}
-              </div>
-            </div>
-          )}
-          
-          {/* Decorations based on special styles */}
-          {hasSpecialBirds && (
-            <div className="absolute top-1/4 -right-4">
-              <div className="w-4 h-4 bg-blue-500 rounded-full"></div>
-              <div className="w-6 h-2 bg-blue-600 -mt-1 ml-3 transform rotate-45"></div>
-            </div>
-          )}
-          
-          {hasSpecialFunctions && (
-            <div className="absolute top-1/3 -left-8">
-              <div className="text-xs bg-white/70 rounded px-1 font-mono">fn()</div>
-            </div>
-          )}
-          
-          {hasSpecialRecursive && (
-            <div className="absolute bottom-1/4 left-full">
-              <div className="w-16 h-16 border border-green-200 rounded-full animate-ping opacity-30"></div>
-            </div>
-          )}
-          
-          {/* Decorations based on tree state */}
-          {decorationsCount > 0 && (
-            <div className="absolute inset-0 pointer-events-none">
-              {Array.from({ length: decorationsCount }).map((_, i) => (
-                <div 
-                  key={i}
-                  className="absolute"
-                  style={{
-                    left: `${20 + Math.random() * 60}%`,
-                    top: `${Math.random() * 80}%`,
-                    transform: `rotate(${Math.random() * 360}deg)`,
-                  }}
-                >
-                  <div className={`w-3 h-3 rounded-full shadow-lg bg-${
-                    ['blue-500', 'purple-500', 'amber-500', 'green-400', 'red-400'][i % 5]
-                  }`}></div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
-  
-  if (!tree) {
-    return <div className="flex justify-center items-center h-60">Loading tree data...</div>;
-  }
-  
+
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center mb-2">
-        <h3 className="text-lg font-semibold">Your Pixelated Tree</h3>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger>
-              <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200">
-                Level {tree?.level || 1}/20
-              </Badge>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p className="text-sm">Your tree's current level</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </div>
-      
-      <Card className="overflow-hidden">
-        {/* Properly wrap ContextMenuTrigger with ContextMenu */}
-        <ContextMenu>
-          <ContextMenuTrigger className="focus:outline-none">
-            <CardContent className="p-6 bg-gradient-to-b from-blue-50 to-white">
-              {renderPixelatedTree()}
-              
-              <div className="mt-4 grid grid-cols-3 gap-2">
-                <div className="flex flex-col items-center">
-                  <Ruler className="h-5 w-5 text-amber-500 mb-1" />
-                  <div className="text-xs text-center">Height</div>
-                  <div className="font-medium">{tree?.height || 0}m</div>
-                </div>
-                <div className="flex flex-col items-center">
-                  <Leaf className="h-5 w-5 text-green-500 mb-1" />
-                  <div className="text-xs text-center">Leaves</div>
-                  <div className="font-medium">{tree?.leaves || 0}%</div>
-                </div>
-                <div className="flex flex-col items-center">
-                  <Heart className="h-5 w-5 text-red-500 mb-1" />
-                  <div className="text-xs text-center">Health</div>
-                  <div className="font-medium">{tree?.health || 0}%</div>
-                </div>
-              </div>
-            </CardContent>
-          </ContextMenuTrigger>
-          <ContextMenuContent>
-            <ContextMenuItem>View Details</ContextMenuItem>
-            <ContextMenuItem>Take Screenshot</ContextMenuItem>
-          </ContextMenuContent>
-        </ContextMenu>
-      </Card>
-      
-      <div className="space-y-4">
-        <div>
-          <div className="flex justify-between items-center mb-2">
-            <h3 className="text-md font-semibold flex items-center">
-              <Award className="h-4 w-4 mr-1 text-green-600" />
-              Growth Promoters
-            </h3>
-            <span className="text-xs text-muted-foreground">{growthRewards.length} available</span>
-          </div>
-          
-          {growthRewards.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 max-h-40 overflow-y-auto p-1">
-              {growthRewards.map(reward => (
-                <Button
-                  key={reward.id}
-                  variant="outline"
-                  size="sm"
-                  className={`flex flex-col h-auto text-xs p-2 ${getRarityColor(reward.rarity)}`}
-                  onClick={() => applyReward && applyReward(reward)}
-                >
-                  <span className="truncate w-full text-center">{reward.name}</span>
-                  <span className="text-[10px] opacity-70 capitalize">{reward.rarity}</span>
-                </Button>
-              ))}
-            </div>
-          ) : (
-            <div className="text-sm text-center text-muted-foreground py-4">
-              Complete tasks to earn growth promoters
-            </div>
+    <div className="flex flex-col items-center justify-center relative pb-5">
+      <div 
+        className={cn(
+          "relative",
+          animation === 'aura' && "animate-pulse",
+          special === 'aura' && "rounded-full bg-blue-200/20 border border-blue-300/30"
+        )}
+        style={{ 
+          width: `${leavesSize}px`, 
+          height: `${leavesSize}px`,
+          padding: special === 'aura' ? '20px' : '0'
+        }}
+      >
+        {/* Tree leaves */}
+        <div 
+          className={cn(
+            "relative w-full h-full",
+            animation === 'grow' && "animate-pulse",
+            animation === 'superGrow' && "animate-bounce"
           )}
-        </div>
-        
-        <div>
-          <div className="flex justify-between items-center mb-2">
-            <h3 className="text-md font-semibold flex items-center">
-              <Gift className="h-4 w-4 mr-1 text-purple-600" />
-              Decorations
-            </h3>
-            <span className="text-xs text-muted-foreground">{decorationRewards.length} available</span>
-          </div>
+        >
+          {getLeaves()}
           
-          {decorationRewards.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 max-h-40 overflow-y-auto p-1">
-              {decorationRewards.map(reward => (
-                <Button
-                  key={reward.id}
-                  variant="outline"
-                  size="sm"
-                  className={`flex flex-col h-auto text-xs p-2 ${getRarityColor(reward.rarity)}`}
-                  onClick={() => applyReward && applyReward(reward)}
-                >
-                  <span className="truncate w-full text-center">{reward.name}</span>
-                  <span className="text-[10px] opacity-70 capitalize">{reward.rarity}</span>
-                </Button>
-              ))}
-            </div>
-          ) : (
-            <div className="text-sm text-center text-muted-foreground py-4">
-              Complete tasks to earn decorations
-            </div>
+          {/* Special effects */}
+          {(animation === 'health' || animation === 'aura') && (
+            Array(10).fill(0).map((_, i) => (
+              <Sparkle
+                key={i}
+                className="absolute text-yellow-400 animate-ping"
+                style={{
+                  top: `${Math.random() * 100}%`,
+                  left: `${Math.random() * 100}%`,
+                  width: `${10 + Math.random() * 15}px`,
+                  height: `${10 + Math.random() * 15}px`,
+                  animationDelay: `${Math.random() * 1}s`,
+                  animationDuration: `${1 + Math.random() * 2}s`,
+                }}
+              />
+            ))
           )}
         </div>
       </div>
+      
+      {/* Tree trunk */}
+      <div 
+        className={cn(
+          "rounded-md transition-all",
+          getTrunkColor(trunkColor),
+          animation === 'grow' && "animate-pulse",
+          animation === 'gold' && "animate-pulse"
+        )}
+        style={{
+          width: `${trunkWidth}px`,
+          height: `${trunkHeight}px`,
+          marginTop: `-${trunkWidth / 2}px`,
+        }}
+      />
+      
+      {/* Root system */}
+      <div className="flex justify-center mt-2">
+        <div 
+          className="bg-gradient-to-r from-amber-900 to-amber-700 rounded-full"
+          style={{
+            width: `${trunkWidth * 1.5}px`,
+            height: `${trunkWidth / 2}px`,
+          }}
+        />
+      </div>
+      
+      {/* Tree height label */}
+      <div className="mt-4 text-center">
+        <p className="text-sm text-muted-foreground">
+          Height: <span className="font-medium">{tree.height.toFixed(1)}m</span>
+        </p>
+      </div>
+      
+      {/* Show animations for effects */}
+      {animation === 'superGrow' && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <Flame className="text-orange-500 animate-ping w-20 h-20 opacity-50" />
+        </div>
+      )}
     </div>
   );
 };

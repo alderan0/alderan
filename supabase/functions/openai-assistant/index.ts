@@ -39,6 +39,8 @@ serve(async (req) => {
       userPrompt = `Based on the following project and tasks information, provide 3-5 specific recommendations to help complete this project efficiently: ${JSON.stringify(projectData)}\n\nUser query: ${prompt}`;
     }
 
+    console.log(`Making OpenAI request for type: ${type}`);
+
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -57,18 +59,24 @@ serve(async (req) => {
 
     const data = await response.json();
     
+    console.log("OpenAI response status:", response.status);
+    
     if (data.error) {
+      console.error("OpenAI API error:", data.error);
       throw new Error(`OpenAI API error: ${data.error.message}`);
     }
 
     // Extract the response content
     const result = data.choices[0].message.content;
+    console.log("OpenAI result received");
 
     // Parse the result if it's a project generation request
     if (type === "generate_project") {
       try {
         // Attempt to parse the generated tasks from the AI response
         const parsedTasks = parseAIGeneratedTasks(result);
+        console.log(`Parsed ${parsedTasks.length} tasks from AI response`);
+        
         return new Response(
           JSON.stringify({ 
             result, 
