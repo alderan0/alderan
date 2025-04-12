@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useTasks, Task } from "@/context/TaskContext";
 import { TaskDeleteDialog } from "./TaskDeleteDialog";
@@ -20,6 +19,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import {
@@ -31,17 +42,21 @@ import {
   Brain,
   Coffee,
   Zap,
-  Moon
+  Moon,
+  Trash2
 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export const TaskList = () => {
-  const { tasks, currentMood, completeTask, setTaskDifficulty } = useTasks();
+  const { tasks, currentMood, completeTask, setTaskDifficulty, deleteCompletedTasks, updateAITrainingPreference } = useTasks();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedTaskId, setSelectedTaskId] = useState("");
   const [selectedTaskName, setSelectedTaskName] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [difficultyDialogOpen, setDifficultyDialogOpen] = useState(false);
   const [completionMinutes, setCompletionMinutes] = useState("");
+  const [useForAITraining, setUseForAITraining] = useState(true);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const completedToday = tasks.filter(task => {
     if (!task.completed || !task.completedAt) return false;
@@ -139,8 +154,47 @@ export const TaskList = () => {
     return "";
   };
   
+  const handleDeleteCompleted = async () => {
+    await deleteCompletedTasks(useForAITraining);
+  };
+
+  const hasCompletedTasks = completedTasks.length > 0;
+
   return (
     <div className="space-y-6">
+      {hasCompletedTasks && (
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="destructive" size="sm" className="ml-auto flex gap-2">
+              <Trash2 className="h-4 w-4" />
+              Delete Completed Tasks
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Completed Tasks</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete all completed tasks? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="flex items-center space-x-2 py-4">
+              <Switch
+                id="ai-training"
+                checked={useForAITraining}
+                onCheckedChange={setUseForAITraining}
+              />
+              <Label htmlFor="ai-training">Use completed tasks to train AI for better recommendations</Label>
+            </div>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeleteCompleted}>
+                Delete Tasks
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
+      
       {incompleteTasks.length > 0 ? (
         <div className="grid gap-4">
           {incompleteTasks.map(task => {

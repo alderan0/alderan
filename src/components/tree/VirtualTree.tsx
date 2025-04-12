@@ -1,34 +1,57 @@
-
 import { useTree } from "@/context/TreeContext";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { format } from "date-fns";
+import { cn } from "@/lib/utils";
+import { GrowthPromoter, Decoration } from "@/config/rewards";
 
 export const VirtualTree = () => {
-  const { tree, treeHistory, galleryIndex, viewPastTree, viewLatestTree, getTreeTier } = useTree();
+  const { tree, treeHistory, galleryIndex, viewPastTree, viewLatestTree, getTreeTier, activeRewards } = useTree();
   const [activeTab, setActiveTab] = useState("tree");
-  
+  const [treeStyle, setTreeStyle] = useState({
+    height: 0,
+    width: 0,
+    leaves: 0,
+    color: "",
+    decorations: [] as Decoration[],
+    growthEffects: [] as GrowthPromoter[]
+  });
+
+  useEffect(() => {
+    // Calculate tree dimensions based on level and active growth promoters
+    const baseHeight = Math.min(tree.level * 50, 400); // Max height of 400px
+    const growthBoost = activeRewards
+      .filter((r): r is GrowthPromoter => r.type === "growth")
+      .reduce((acc, r) => acc + r.growthBoost, 0);
+
+    const finalHeight = baseHeight * (1 + growthBoost / 100);
+    const trunkWidth = Math.max(20, Math.min(40, tree.level * 5));
+    const leavesPercentage = Math.min(100, tree.health);
+
+    setTreeStyle({
+      height: finalHeight,
+      width: trunkWidth,
+      leaves: leavesPercentage,
+      color: getLeafColor(tree.health),
+      decorations: activeRewards.filter((r): r is Decoration => r.type === "decoration"),
+      growthEffects: activeRewards.filter((r): r is GrowthPromoter => r.type === "growth")
+    });
+  }, [tree, activeRewards]);
+
   // Calculate sizes and colors based on tree state
   const treeHeight = 200 + (tree.height * 2); // Base height + growth
   const trunkWidth = 20 + Math.floor(tree.height / 10); // Trunk gets thicker as tree grows
   const canopySize = 100 + (tree.leaves * 1.5); // Tree canopy grows with leaves
   
   // Apply styled effects based on tree styling options
-  const getLeafColor = () => {
-    switch(tree.styles?.leafStyle || "default") {
-      case "syntax":
-        return `hsl(210, ${60 + (tree.health / 3)}%, ${40 + (tree.health / 5)}%)`; // Blue syntax
-      case "pixel":
-        return `hsl(${100 + (tree.health / 2)}, ${50 + (tree.health / 4)}%, ${30 + (tree.health / 4)}%)`; // Pixelated green
-      case "binary":
-        return `hsl(150, ${70 + (tree.health / 5)}%, ${35 + (tree.health / 6)}%)`; // Binary green
-      default:
-        return `hsl(${100 + (tree.health / 2)}, ${60 + (tree.health / 3)}%, ${40 + (tree.health / 5)}%)`; // Default green
-    }
+  const getLeafColor = (health: number) => {
+    if (health > 80) return "rgb(34, 197, 94)"; // Healthy green
+    if (health > 50) return "rgb(234, 179, 8)"; // Warning yellow
+    return "rgb(239, 68, 68)"; // Danger red
   };
   
   const getBarkColor = () => {
@@ -205,9 +228,9 @@ export const VirtualTree = () => {
           className={`absolute left-1/2 transform -translate-x-1/2 bg-gradient-to-b ${getBarkColor()}`}
           style={{
             height: `${treeHeight * 0.7}px`,
-            width: `${trunkWidth}px`,
+            width: `${treeStyle.width}px`,
             bottom: 0,
-            borderRadius: `${trunkWidth / 2}px ${trunkWidth / 2}px 0 0`,
+            borderRadius: `${treeStyle.width / 2}px ${treeStyle.width / 2}px 0 0`,
             boxShadow: "inset -4px 0 6px rgba(0,0,0,0.2)",
           }}
         >
@@ -220,7 +243,7 @@ export const VirtualTree = () => {
                   className="text-[8px] font-mono text-white opacity-80 absolute"
                   style={{
                     top: `${i * 8}%`,
-                    left: `${i % 2 === 0 ? 2 : trunkWidth / 2}px`,
+                    left: `${i % 2 === 0 ? 2 : treeStyle.width / 2}px`,
                   }}
                 >
                   {i % 2 === 0 ? '10' : '01'}
@@ -237,9 +260,9 @@ export const VirtualTree = () => {
           transition={{ duration: 1, delay: 0.5 }}
           className="absolute left-1/2 transform -translate-x-1/2 rounded-full"
           style={{
-            backgroundColor: getLeafColor(),
-            height: `${canopySize}px`,
-            width: `${canopySize}px`,
+            backgroundColor: treeStyle.color,
+            height: `${treeStyle.height}px`,
+            width: `${treeStyle.width}px`,
             bottom: `${treeHeight * 0.4}px`,
             boxShadow: "inset -15px -10px 20px rgba(0,0,0,0.1)",
           }}
@@ -292,7 +315,7 @@ export const VirtualTree = () => {
             }}
             className="absolute"
             style={{
-              backgroundColor: getLeafColor(),
+              backgroundColor: treeStyle.color,
               height: `${leaf.size}px`,
               width: `${leaf.size}px`,
               left: `calc(50% + ${leaf.x}px)`,
@@ -316,7 +339,7 @@ export const VirtualTree = () => {
             }}
             className="absolute rounded-full"
             style={{
-              backgroundColor: getLeafColor(),
+              backgroundColor: treeStyle.color,
               height: `${leaf.size}px`,
               width: `${leaf.size}px`,
               left: `calc(50% + ${leaf.x}px)`,
@@ -350,7 +373,7 @@ export const VirtualTree = () => {
         )}
         
         {/* Decorations */}
-        {tree.decorations.map((decoration, index) => (
+        {treeStyle.decorations.map((decoration, index) => (
           <motion.div
             key={index}
             initial={{ scale: 0 }}

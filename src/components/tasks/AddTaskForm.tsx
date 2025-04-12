@@ -25,6 +25,18 @@ import { Mic, MicOff, Plus, Sparkles, Brain, Coffee, Zap, Moon, FolderKanban, Lo
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
+import { Calendar as CalendarIcon, Clock, Star } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { MoodSelector } from "./MoodSelector";
+import { TimePickerDemo } from "../ui/time-picker";
+import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
+
+const DIFFICULTY_LEVELS = ["Easy", "Medium", "Hard", "Very Hard"] as const;
+const TASK_TYPES = ["Task", "Subtask", "Project"] as const;
 
 export const AddTaskForm = () => {
   const { addTask, currentMood, projects, addProject, addSubtask, tasks } = useTasks();
@@ -48,6 +60,18 @@ export const AddTaskForm = () => {
   const [subtaskName, setSubtaskName] = useState("");
   
   const [isTypeSelectionOpen, setIsTypeSelectionOpen] = useState(false);
+  
+  const [taskType, setTaskType] = useState<typeof TASK_TYPES[number]>("Task");
+  const [formData, setFormData] = useState({
+    name: "",
+    description: "",
+    difficulty: "Medium",
+    deadline: null as Date | null,
+    deadlineTime: "",
+    estimatedTime: "",
+    userRating: 3,
+    mood: "Neutral",
+  });
   
   useEffect(() => {
     if (isOpen) {
@@ -74,51 +98,38 @@ export const AddTaskForm = () => {
     }
   }, [formType]);
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (formType === "task") {
-      if (!taskName || !deadlineDate) {
-        return;
-      }
-      
-      const dateString = `${deadlineDate}${deadlineTime ? 'T' + deadlineTime : 'T23:59'}`;
-      const deadline = new Date(dateString);
-      
-      const hours = parseInt(estimatedHours) || 0;
-      const minutes = parseInt(estimatedMinutes) || 0;
-      const totalMinutes = (hours * 60) + minutes;
-      
-      addTask({
-        name: taskName,
-        deadline,
-        estimatedTime: totalMinutes || 30,
-        mood: taskMood as any,
-        projectId: selectedProjectId === "none" ? undefined : selectedProjectId,
-        userRating: taskDifficulty as any || undefined
-      });
-      
-    } else if (formType === "subtask") {
-      if (!subtaskName || !selectedTaskId) {
-        return;
-      }
-      
-      addSubtask(selectedTaskId, subtaskName);
-      
-    } else if (formType === "project") {
-      if (!projectName) {
-        return;
-      }
-      
-      addProject({
-        name: projectName,
-        description: projectDescription,
-        deadline: projectDeadline ? new Date(projectDeadline) : undefined,
-      });
+    const taskData = {
+      ...formData,
+      createdAt: new Date(),
+      completed: false,
+    };
+
+    switch (taskType) {
+      case "Task":
+        await addTask(taskData);
+        break;
+      case "Subtask":
+        await addSubtask(taskData);
+        break;
+      case "Project":
+        await addProject(taskData);
+        break;
     }
-    
+
+    setFormData({
+      name: "",
+      description: "",
+      difficulty: "Medium",
+      deadline: null,
+      deadlineTime: "",
+      estimatedTime: "",
+      userRating: 3,
+      mood: "Neutral",
+    });
     setIsOpen(false);
-    setIsTypeSelectionOpen(false);
   };
   
   const startVoiceRecognition = () => {

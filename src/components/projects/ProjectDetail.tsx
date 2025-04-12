@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useTasks, Task } from "@/context/TaskContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,119 +24,68 @@ interface ProjectDetailProps {
 }
 
 export const ProjectDetail = ({ projectId, onBack }: ProjectDetailProps) => {
-  const { 
-    projects, completeProject, deleteProject, 
-    tasks, getProjectResources
-  } = useTasks();
-  
+  const { projects, tasks, completeProject, deleteProject } = useTasks();
   const [isAddTaskDialogOpen, setIsAddTaskDialogOpen] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
-
+  
   const project = projects.find(p => p.id === projectId);
+  if (!project) return null;
   
-  if (!project) {
-    return (
-      <div className="text-center py-8">
-        <p>Project not found.</p>
-        <Button onClick={onBack} variant="outline" className="mt-4">
-          <ChevronLeft className="mr-2 h-4 w-4" />
-          Back to Projects
-        </Button>
-      </div>
-    );
-  }
-
-  // Get tasks for this project
-  const projectTasks = tasks.filter(task => task.projectId === projectId);
-  const activeTasks = projectTasks.filter(task => !task.completed);
-  const completedTasks = projectTasks.filter(task => task.completed);
+  const projectTasks = tasks.filter(t => t.projectId === projectId);
+  const activeTasks = projectTasks.filter(t => !t.completed);
+  const completedTasks = projectTasks.filter(t => t.completed);
   
-  // Get AI-suggested resources for this project
-  const projectResources = getProjectResources(projectId);
-
-  const handleComplete = () => {
-    completeProject(projectId);
-  };
-
-  const handleDelete = () => {
-    if (confirmDelete) {
-      deleteProject(projectId);
-      onBack();
-    } else {
-      setConfirmDelete(true);
-      setTimeout(() => setConfirmDelete(false), 3000); // Reset after 3 seconds
-    }
-  };
-
   return (
     <div className="space-y-6">
-      {/* Header with back button */}
-      <div className="flex items-center">
-        <Button onClick={onBack} variant="ghost" size="sm" className="mr-4">
-          <ChevronLeft className="mr-1 h-4 w-4" />
-          Back
+      {/* Project Header */}
+      <div className="flex items-center justify-between">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onBack}
+          className="mb-4"
+        >
+          <ChevronLeft className="h-4 w-4 mr-1" />
+          Back to Projects
         </Button>
-        <h1 className="text-2xl font-bold flex-1">
-          {project.name}
-          {project.completed && (
-            <CheckCircle className="inline ml-2 h-5 w-5 text-green-500" />
-          )}
-        </h1>
-        <div className="space-x-2">
+        <div className="flex gap-2">
           {!project.completed && (
-            <Button 
-              onClick={handleComplete} 
-              variant="outline" 
+            <Button
+              variant="outline"
               size="sm"
-              className="border-green-500 text-green-500 hover:bg-green-500/10"
+              onClick={() => completeProject(projectId)}
             >
-              <CheckCircle className="mr-1 h-4 w-4" />
-              Complete
+              <CheckCircle className="h-4 w-4 mr-1" />
+              Complete Project
             </Button>
           )}
-          <Button 
-            onClick={handleDelete} 
-            variant="destructive" 
+          <Button
+            variant="outline"
             size="sm"
+            onClick={() => deleteProject(projectId)}
           >
-            <Trash2 className="mr-1 h-4 w-4" />
-            {confirmDelete ? "Confirm Delete" : "Delete"}
+            <Trash2 className="h-4 w-4 mr-1" />
+            Delete Project
           </Button>
         </div>
       </div>
       
-      {/* Project info */}
-      <Card className="bg-muted/30">
+      <Card>
         <CardHeader>
-          <CardTitle>Project Details</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            {project.description && (
-              <p className="text-muted-foreground">{project.description}</p>
-            )}
-            <div className="flex items-center text-sm">
-              <Calendar className="mr-1 h-4 w-4" />
-              <span>Created {formatDistanceToNow(new Date(project.createdAt), { addSuffix: true })}</span>
+          <CardTitle>{project.name}</CardTitle>
+          {project.description && (
+            <CardDescription>{project.description}</CardDescription>
+          )}
+          {project.deadline && (
+            <div className="flex items-center text-sm text-muted-foreground mt-2">
+              <Calendar className="h-4 w-4 mr-1" />
+              Due {formatDistanceToNow(new Date(project.deadline), { addSuffix: true })}
             </div>
-            {project.deadline && (
-              <div className="flex items-center text-sm">
-                <Calendar className="mr-1 h-4 w-4 text-orange-500" />
-                <span>Due {formatDistanceToNow(new Date(project.deadline), { addSuffix: true })}</span>
-              </div>
-            )}
-            {project.completedAt && (
-              <div className="flex items-center text-sm text-green-600">
-                <CheckCircle className="mr-1 h-4 w-4" />
-                <span>Completed {formatDistanceToNow(new Date(project.completedAt), { addSuffix: true })}</span>
-              </div>
-            )}
-          </div>
-        </CardContent>
+          )}
+        </CardHeader>
       </Card>
       
-      {/* AI-Suggested Resources */}
-      <ProjectResources resources={projectResources} />
+      {/* Project Resources */}
+      <ProjectResources projectId={projectId} />
       
       {/* Tasks Section */}
       <div className="space-y-4">

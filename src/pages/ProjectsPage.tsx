@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useTasks } from "@/context/TaskContext";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,11 +6,14 @@ import { PlusCircle, Calendar, CheckCircle, Trash2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { AddProjectDialog } from "@/components/projects/AddProjectDialog";
 import { ProjectDetail } from "@/components/projects/ProjectDetail";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 
 const ProjectsPage = () => {
   const { projects } = useTasks();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const isMobile = useIsMobile();
 
   // Filter for active and completed projects
   const activeProjects = projects.filter(p => !p.completed);
@@ -25,130 +27,130 @@ const ProjectsPage = () => {
     setSelectedProjectId(null);
   };
 
-  return (
-    <div className="pb-20 space-y-6">
-      {/* If a project is selected, show project detail view */}
-      {selectedProjectId ? (
-        <ProjectDetail 
-          projectId={selectedProjectId} 
-          onBack={closeProjectDetail}
-        />
-      ) : (
-        <>
-          <div className="flex flex-col sm:flex-row items-center sm:justify-between gap-4 mb-6">
-            <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-blue-500">
-              Projects
-            </h1>
-            <Button 
-              onClick={() => setIsDialogOpen(true)}
-              size="lg"
-              className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 w-full sm:w-auto shadow-md transition-all hover:shadow-lg"
-            >
-              <PlusCircle className="mr-2 h-5 w-5" />
-              Create New Project
-            </Button>
-          </div>
-          
-          {/* Active projects */}
-          <div className="space-y-2">
-            <h2 className="text-xl font-semibold">Active Projects</h2>
-            {activeProjects.length > 0 ? (
-              <div className="grid gap-4 sm:grid-cols-2">
-                {activeProjects.map(project => (
-                  <Card 
-                    key={project.id} 
-                    className="cursor-pointer hover:shadow-md transition-all"
-                    onClick={() => handleProjectClick(project.id)}
-                  >
-                    <CardHeader>
-                      <CardTitle>{project.name}</CardTitle>
-                      {project.description && (
-                        <CardDescription>{project.description}</CardDescription>
-                      )}
-                    </CardHeader>
-                    <CardContent>
-                      {/* Project details */}
-                      <div className="text-sm text-muted-foreground">
-                        <div className="flex items-center">
-                          <Calendar className="mr-1 h-4 w-4" />
-                          Created {formatDistanceToNow(new Date(project.createdAt), { addSuffix: true })}
-                        </div>
-                        
-                        {project.deadline && (
-                          <div className="mt-1 flex items-center">
-                            <Calendar className="mr-1 h-4 w-4 text-orange-500" />
-                            Due {formatDistanceToNow(new Date(project.deadline), { addSuffix: true })}
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                    <CardFooter>
-                      <Button variant="ghost" size="sm">
-                        View Details →
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <div className="text-muted-foreground text-center py-12 bg-muted/50 rounded-lg">
-                <p className="mb-4">No active projects. Create a new project to get started.</p>
-                <Button 
-                  onClick={() => setIsDialogOpen(true)}
-                  size="lg"
-                  className="bg-gradient-to-r from-purple-500 to-blue-500"
-                >
-                  <PlusCircle className="mr-2 h-5 w-5" />
-                  Create New Project
-                </Button>
-              </div>
-            )}
-          </div>
-          
-          {/* Completed projects */}
-          {completedProjects.length > 0 && (
-            <div className="space-y-4 mt-8">
-              <h2 className="text-xl font-semibold">Completed Projects</h2>
-              <div className="grid gap-4 sm:grid-cols-2">
-                {completedProjects.map(project => (
-                  <Card 
-                    key={project.id} 
-                    className="cursor-pointer hover:shadow-md transition-all bg-muted/30"
-                    onClick={() => handleProjectClick(project.id)}
-                  >
-                    <CardHeader>
-                      <div className="flex items-center space-x-2">
-                        <CardTitle>{project.name}</CardTitle>
-                        <CheckCircle className="h-4 w-4 text-green-500" />
-                      </div>
-                      {project.description && (
-                        <CardDescription>{project.description}</CardDescription>
-                      )}
-                    </CardHeader>
-                    <CardContent>
-                      {/* Project details */}
-                      <div className="text-sm text-muted-foreground">
-                        <div className="flex items-center">
-                          <CheckCircle className="mr-1 h-4 w-4 text-green-500" />
-                          Completed {project.completedAt && formatDistanceToNow(new Date(project.completedAt), { addSuffix: true })}
-                        </div>
-                      </div>
-                    </CardContent>
-                    <CardFooter>
-                      <Button variant="ghost" size="sm">
-                        View Details →
-                      </Button>
-                    </CardFooter>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          )}
-        </>
-      )}
+  if (selectedProjectId) {
+    return <ProjectDetail projectId={selectedProjectId} onBack={closeProjectDetail} />;
+  }
 
-      {/* Add project dialog */}
-      <AddProjectDialog open={isDialogOpen} onOpenChange={setIsDialogOpen} />
+  return (
+    <div className="space-y-8 animate-in fade-in duration-500">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">Projects</h1>
+          <p className="text-muted-foreground">Manage and track your coding projects</p>
+        </div>
+        <Button onClick={() => setIsDialogOpen(true)} className="gap-2">
+          <PlusCircle className="h-4 w-4" />
+          New Project
+        </Button>
+      </div>
+
+      <div className="space-y-8">
+        {/* Active Projects */}
+        <div className="space-y-4">
+          <h2 className="text-xl font-semibold">Active Projects</h2>
+          {activeProjects.length > 0 ? (
+            <div className={cn(
+              "grid gap-4",
+              isMobile ? "grid-cols-1" : "sm:grid-cols-2 lg:grid-cols-3"
+            )}>
+              {activeProjects.map(project => (
+                <Card 
+                  key={project.id} 
+                  className="group cursor-pointer hover:shadow-md transition-all duration-300"
+                  onClick={() => handleProjectClick(project.id)}
+                >
+                  <CardHeader>
+                    <CardTitle className="group-hover:text-primary transition-colors">
+                      {project.name}
+                    </CardTitle>
+                    {project.description && (
+                      <CardDescription>{project.description}</CardDescription>
+                    )}
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-sm text-muted-foreground space-y-2">
+                      <div className="flex items-center">
+                        <Calendar className="mr-2 h-4 w-4" />
+                        Created {formatDistanceToNow(new Date(project.createdAt), { addSuffix: true })}
+                      </div>
+                      {project.deadline && (
+                        <div className="flex items-center">
+                          <Calendar className="mr-2 h-4 w-4 text-orange-500" />
+                          Due {formatDistanceToNow(new Date(project.deadline), { addSuffix: true })}
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                  <CardFooter>
+                    <Button variant="ghost" size="sm" className="ml-auto group-hover:text-primary">
+                      View Details →
+                    </Button>
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <Card className="bg-muted/50">
+              <CardContent className="flex flex-col items-center justify-center py-8 text-center">
+                <p className="text-muted-foreground mb-4">No active projects. Create one to get started!</p>
+                <Button onClick={() => setIsDialogOpen(true)} variant="outline" className="gap-2">
+                  <PlusCircle className="h-4 w-4" />
+                  Create Project
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        {/* Completed Projects */}
+        {completedProjects.length > 0 && (
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold text-muted-foreground">Completed Projects</h2>
+            <div className={cn(
+              "grid gap-4",
+              isMobile ? "grid-cols-1" : "sm:grid-cols-2 lg:grid-cols-3"
+            )}>
+              {completedProjects.map(project => (
+                <Card 
+                  key={project.id} 
+                  className="group cursor-pointer hover:shadow-md transition-all duration-300 bg-muted/30"
+                  onClick={() => handleProjectClick(project.id)}
+                >
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="group-hover:text-primary transition-colors">
+                        {project.name}
+                      </CardTitle>
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                    </div>
+                    {project.description && (
+                      <CardDescription>{project.description}</CardDescription>
+                    )}
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-sm text-muted-foreground space-y-2">
+                      <div className="flex items-center">
+                        <Calendar className="mr-2 h-4 w-4" />
+                        Completed {formatDistanceToNow(new Date(project.completedAt!), { addSuffix: true })}
+                      </div>
+                    </div>
+                  </CardContent>
+                  <CardFooter>
+                    <Button variant="ghost" size="sm" className="ml-auto group-hover:text-primary">
+                      View Details →
+                    </Button>
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <AddProjectDialog 
+        open={isDialogOpen} 
+        onOpenChange={setIsDialogOpen}
+      />
     </div>
   );
 };

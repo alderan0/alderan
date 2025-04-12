@@ -1,38 +1,44 @@
-
-import React from "react";
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
-import AuthPage from "./pages/AuthPage";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { Layout } from "@/components/layout/Layout";
 import { AuthProvider } from "@/context/AuthContext";
-import LandingPage from "./pages/LandingPage";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import TasksPage from "@/pages/TasksPage";
+import ProjectsPage from "@/pages/ProjectsPage";
+import CommunityPage from "@/pages/CommunityPage";
+import AuthPage from "@/pages/auth/AuthPage";
+import LandingPage from "@/pages/LandingPage";
+import { Toaster } from "@/components/ui/toaster";
 
 function App() {
-  // Create a QueryClient instance
-  const queryClient = new QueryClient();
-
   return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <AuthProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <Routes>
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/auth" element={<AuthPage />} />
-              <Route path="/app/*" element={<Index />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </TooltipProvider>
-        </AuthProvider>
-      </BrowserRouter>
-    </QueryClientProvider>
+    <Router>
+      <AuthProvider>
+        <Routes>
+          {/* Public routes */}
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/auth" element={<AuthPage />} />
+
+          {/* Protected routes */}
+          <Route
+            path="/app"
+            element={
+              <ProtectedRoute>
+                <Layout />
+              </ProtectedRoute>
+            }
+          >
+            <Route index element={<Navigate to="/app/tasks" replace />} />
+            <Route path="tasks" element={<TasksPage />} />
+            <Route path="projects" element={<ProjectsPage />} />
+            <Route path="community" element={<CommunityPage />} />
+          </Route>
+
+          {/* Catch all */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+        <Toaster />
+      </AuthProvider>
+    </Router>
   );
 }
 

@@ -1,56 +1,87 @@
-
-import { ProjectResource } from "@/context/TaskContext";
+import { useTasks } from "@/context/TaskContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Code, BookOpen } from "lucide-react";
-import * as Icons from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { 
+  Code, 
+  BookOpen, 
+  ExternalLink, 
+  Sparkles,
+  Brain,
+  Coffee,
+  Zap,
+  Moon
+} from "lucide-react";
 
 interface ProjectResourcesProps {
-  resources: ProjectResource[];
+  projectId: string;
 }
 
-export const ProjectResources = ({ resources }: ProjectResourcesProps) => {
-  if (!resources || resources.length === 0) {
+export const ProjectResources = ({ projectId }: ProjectResourcesProps) => {
+  const { getProjectResources } = useTasks();
+  const resources = getProjectResources(projectId);
+
+  const getResourceIcon = (type: string) => {
+    switch (type) {
+      case "app":
+        return <Code className="h-4 w-4 mr-2 text-blue-500" />;
+      case "resource":
+        return <BookOpen className="h-4 w-4 mr-2 text-green-500" />;
+      default:
+        return null;
+    }
+  };
+
+  const getMoodIcon = (mood: string) => {
+    switch (mood) {
+      case "Creative": return <Sparkles size={16} className="mr-1 text-purple-500" />;
+      case "Focused": return <Brain size={16} className="mr-1 text-blue-500" />;
+      case "Relaxed": return <Coffee size={16} className="mr-1 text-green-500" />;
+      case "Energetic": return <Zap size={16} className="mr-1 text-amber-500" />;
+      case "Tired": return <Moon size={16} className="mr-1 text-gray-500" />;
+      default: return null;
+    }
+  };
+
+  if (resources.length === 0) {
     return null;
   }
-  
-  // Dynamic icon component lookup
-  const getDynamicIcon = (iconName: string) => {
-    const IconComponent = (Icons as any)[iconName];
-    if (IconComponent) {
-      return <IconComponent className="h-5 w-5" />;
-    }
-    return iconName === "app" ? <Code className="h-5 w-5" /> : <BookOpen className="h-5 w-5" />;
-  };
 
   return (
     <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-lg flex items-center">
-          <span className="text-lg mr-2">🧠</span> 
-          AI-Suggested Resources
+      <CardHeader>
+        <CardTitle className="flex items-center text-lg">
+          <Sparkles className="mr-2 h-5 w-5 text-purple-500" />
+          Recommended Tools
         </CardTitle>
-        <CardDescription>Tools and resources that might help with this project</CardDescription>
+        <CardDescription>
+          AI-suggested resources to help you complete your project tasks
+        </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="flex flex-wrap gap-2">
+        <div className="grid gap-4">
           {resources.map((resource) => (
-            <Button
+            <div
               key={resource.id}
-              variant="outline"
-              size="sm"
-              className="flex items-center gap-2 h-auto py-2"
-              onClick={() => window.open(resource.url, "_blank")}
+              className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
             >
-              <div className={`p-1 rounded-md ${resource.type === "app" ? "bg-primary/10" : "bg-secondary/20"}`}>
-                {getDynamicIcon(resource.iconName)}
+              <div className="flex items-center">
+                {getResourceIcon(resource.type)}
+                <div>
+                  <div className="font-medium">{resource.name}</div>
+                  <div className="text-sm text-muted-foreground">
+                    {resource.description}
+                  </div>
+                </div>
               </div>
-              <div className="flex flex-col items-start">
-                <span className="font-medium">{resource.name}</span>
-                <span className="text-xs text-muted-foreground">{resource.description}</span>
-              </div>
-              <ExternalLink size={14} className="ml-1 opacity-70" />
-            </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => window.open(resource.url, '_blank')}
+              >
+                <ExternalLink className="h-4 w-4" />
+              </Button>
+            </div>
           ))}
         </div>
       </CardContent>

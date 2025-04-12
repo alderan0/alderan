@@ -1,6 +1,7 @@
 import { createContext, useState, useContext, useEffect, ReactNode } from "react";
 import { toast } from "sonner";
 import { useTree } from "./TreeContext";
+import { v4 as uuidv4 } from "uuid";
 
 export interface Subtask {
   id: string;
@@ -9,21 +10,29 @@ export interface Subtask {
   completedAt?: Date;
 }
 
+interface TaskStats {
+  completionRate: number;
+  averageCompletionTime: number;
+  productivityScore: number;
+  highPriorityTasks: number;
+}
+
 export interface Task {
   id: string;
   name: string;
   deadline: Date;
-  estimatedTime: number; // In minutes
-  priority: number;
+  estimatedTime: number;
+  actualTime?: number;
   completed: boolean;
+  priority: 'low' | 'medium' | 'high';
+  mood?: 'Creative' | 'Focused' | 'Relaxed' | 'Energetic' | 'Tired';
+  projectId?: string;
+  createdAt: Date;
   completedAt?: Date;
-  actualTime?: number; // In minutes
-  mood?: "Creative" | "Focused" | "Relaxed" | "Energetic" | "Tired"; // Added mood property
-  projectId?: string; // Reference to parent project
-  subtasks: Subtask[]; // Added subtasks
+  subtasks: Subtask[];
   notes?: string;
-  difficulty?: number; // Task difficulty score (0-100)
-  userRating?: "easy" | "medium" | "hard"; // User-provided difficulty rating
+  difficulty?: number;
+  tags?: string[];
 }
 
 export interface Project {
@@ -48,11 +57,10 @@ export interface ProjectResource {
 export interface Habit {
   id: string;
   name: string;
-  createdAt: Date;
+  frequency: 'daily' | 'weekly' | 'monthly';
   streak: number;
   lastCompleted?: Date;
-  preferredMood?: "Creative" | "Focused" | "Relaxed" | "Energetic" | "Tired";
-  preferredTimeOfDay?: "morning" | "afternoon" | "evening" | "night";
+  preferredMood?: 'Creative' | 'Focused' | 'Relaxed' | 'Energetic' | 'Tired';
 }
 
 export interface Tool {
@@ -73,7 +81,7 @@ export interface Tool {
 
 interface TaskContextType {
   tasks: Task[];
-  addTask: (task: Omit<Task, "id" | "priority" | "completed" | "subtasks" | "difficulty">) => void;
+  addTask: (task: Pick<Task, 'name' | 'deadline' | 'estimatedTime' | 'mood'>) => void;
   completeTask: (id: string, actualTime: number) => void;
   deleteTask: (id: string, useForTraining?: boolean) => void;
   prioritizeTasks: () => void;
@@ -92,6 +100,18 @@ interface TaskContextType {
   deleteSubtask: (taskId: string, subtaskId: string) => void;
   getProjectResources: (projectId: string) => ProjectResource[];
   setTaskDifficulty: (taskId: string, rating: "easy" | "medium" | "hard") => void;
+  deleteCompletedTasks: (useForTraining: boolean) => void;
+  updateAITrainingPreference: (enabled: boolean) => void;
+  getAIScheduleSuggestions: () => {
+    daily: string[];
+    weekly: string[];
+    monthly: string[];
+  };
+  getMoodBasedSuggestions: () => Task[];
+  getTaskStats: () => TaskStats;
+  aiTrainingEnabled: boolean;
+  updateTaskPriority: (taskId: string, priority: "low" | "medium" | "high") => void;
+  calculateProductivityScore: () => number;
 }
 
 const TaskContext = createContext<TaskContextType | undefined>(undefined);
@@ -322,11 +342,18 @@ const resourcesDatabase: ProjectResource[] = [
   },
 ];
 
-const calculatePriority = (task: Omit<Task, "id" | "priority" | "completed" | "subtasks">, tasks: Task[], currentMood: string): number => {
-  const now = new Date();
-  const deadlineDate = new Date(task.deadline);
+interface TaskWithPriorityScore extends Omit<Task, 'priority'> {
+  priorityScore: number;
+  priority: 'low' | 'medium' | 'high';
+}
+
+type NewTaskInput = Pick<Task, 'name' | 'deadline' | 'estimatedTime' | 'mood'>;
+
+const calculatePriority = (task: NewTaskInput, tasks: Task[], currentMood: string): number => {
+  const now = new Date().getTime();
+  const deadlineDate = new Date(task.deadline).getTime();
   
-  const hoursUntilDeadline = Math.max(0, (deadlineDate.getTime() - now.getTime()) / (1000 * 60 * 60));
+  const hoursUntilDeadline = Math.max(0, (deadlineDate - now) / (1000 * 60 * 60));
   
   const deadlineScore = 100 - Math.min(100, hoursUntilDeadline);
   
@@ -345,7 +372,7 @@ const calculatePriority = (task: Omit<Task, "id" | "priority" | "completed" | "s
     }
   }
   
-  return ((deadlineScore * 0.5) + (timeScore * 0.2)) * 0.7 + (moodScore * 0.3);
+  return Math.floor((deadlineScore * 0.4) + (timeScore * 0.3) + (moodScore * 0.3));
 };
 
 const detectHabitPattern = (tasks: Task[]): Habit | null => {
@@ -420,10 +447,10 @@ const detectHabitPattern = (tasks: Task[]): Habit | null => {
   return {
     id: Date.now().toString(),
     name: habitName,
-    createdAt: new Date(),
+    frequency: "daily",
     streak: 0,
-    preferredMood,
-    preferredTimeOfDay: mostProductiveTime
+    lastCompleted: undefined,
+    preferredMood: preferredMood,
   };
 };
 
@@ -434,18 +461,21 @@ const suggestResources = (projectName: string, taskNames: string[]): ProjectReso
   const suggestions: ProjectResource[] = [];
   const allKeywords = [projectLower, ...taskLower].join(" ");
   
+  // Define keyword categories
   const webDevKeywords = ["web", "website", "frontend", "html", "css", "javascript", "js", "react", "vue", "angular"];
   const designKeywords = ["design", "ui", "ux", "mockup", "wireframe", "figma", "sketch", "prototype"];
   const backendKeywords = ["backend", "api", "server", "database", "db", "node", "express", "django", "flask", "sql"];
   const mobileKeywords = ["mobile", "app", "ios", "android", "react native", "flutter", "swift", "kotlin"];
   const devopsKeywords = ["devops", "deployment", "ci/cd", "docker", "kubernetes", "aws", "cloud"];
   
+  // Check for keyword matches
   const hasWebDev = webDevKeywords.some(kw => allKeywords.includes(kw));
   const hasDesign = designKeywords.some(kw => allKeywords.includes(kw));
   const hasBackend = backendKeywords.some(kw => allKeywords.includes(kw));
   const hasMobile = mobileKeywords.some(kw => allKeywords.includes(kw));
   const hasDevOps = devopsKeywords.some(kw => allKeywords.includes(kw));
   
+  // Add relevant resources based on project type
   if (hasWebDev || hasBackend || hasMobile || hasDevOps) {
     suggestions.push(resourcesDatabase.find(r => r.name === "VS Code")!);
   }
@@ -465,11 +495,14 @@ const suggestResources = (projectName: string, taskNames: string[]): ProjectReso
     suggestions.push(resourcesDatabase.find(r => r.name === "DevDocs")!);
   }
   
+  // Add general development resources
   suggestions.push(resourcesDatabase.find(r => r.name === "GitHub")!);
   suggestions.push(resourcesDatabase.find(r => r.name === "Stack Overflow")!);
   
+  // Add project management tools
   suggestions.push(resourcesDatabase.find(r => r.name === "Notion")!);
   
+  // Remove duplicates and limit to 5 most relevant suggestions
   const uniqueSuggestions = Array.from(new Set(suggestions));
   return uniqueSuggestions.slice(0, 5);
 };
@@ -540,8 +573,7 @@ export const TaskProvider = ({ children }: { children: ReactNode }) => {
       try {
         return JSON.parse(saved).map((habit: any) => ({
           ...habit,
-          createdAt: new Date(habit.createdAt),
-          lastCompleted: habit.lastCompleted ? new Date(habit.lastCompleted) : undefined
+          preferredMood: habit.preferredMood as any
         }));
       } catch (e) {
         return [];
@@ -556,6 +588,8 @@ export const TaskProvider = ({ children }: { children: ReactNode }) => {
   });
 
   const [suggestedTasks, setSuggestedTasks] = useState<Task[]>([]);
+
+  const [aiTrainingEnabled, setAITrainingEnabled] = useState(true);
 
   useEffect(() => {
     localStorage.setItem('tasks', JSON.stringify(tasks));
@@ -597,28 +631,34 @@ export const TaskProvider = ({ children }: { children: ReactNode }) => {
     );
   }, [tasks, projects, tools, habits, currentMood]);
 
-  const addTask = (taskData: Omit<Task, "id" | "priority" | "completed" | "subtasks" | "difficulty">) => {
-    const priority = calculatePriority(taskData, tasks, currentMood);
-    
-    const difficultyScore = calculateTaskDifficulty(
-      taskData.name, 
-      taskData.notes || "", 
-      taskData.estimatedTime, 
-      taskData.userRating
-    );
-    
-    const newTask: Task = {
-      id: Date.now().toString(),
-      ...taskData,
-      priority,
-      difficulty: difficultyScore,
-      completed: false,
-      subtasks: []
-    };
+  const calculateHabitScore = (habits: Habit[]): number => {
+    if (habits.length === 0) return 0;
+    const totalStreak = habits.reduce((sum, habit) => sum + habit.streak, 0);
+    return Math.min(100, Math.floor((totalStreak / habits.length) * 10));
+  };
 
+  const calculateProductivityScore = (): number => {
+    if (tasks.length === 0) return 0;
+    const completedTasks = tasks.filter(task => task.completed);
+    const completionRate = completedTasks.length / tasks.length;
+    const highPriorityCompleted = completedTasks.filter(task => task.priority === 'high').length;
+    return Math.min(100, Math.floor((completionRate * 70) + (highPriorityCompleted * 30)));
+  };
+
+  const addTask = (taskData: NewTaskInput): void => {
+    const newTask: Task = {
+      ...taskData,
+      id: uuidv4(),
+      priority: 'medium' as const,
+      completed: false,
+      subtasks: [],
+      createdAt: new Date(),
+      actualTime: 0,
+      difficulty: 1,
+      notes: '',
+      tags: []
+    };
     setTasks(prev => [...prev, newTask]);
-    toast.success("Task added successfully");
-    
     prioritizeTasks();
   };
 
@@ -676,7 +716,7 @@ export const TaskProvider = ({ children }: { children: ReactNode }) => {
     
     setHabits(prev => 
       prev.map(habit => 
-        habit.preferredTimeOfDay === timeOfDay
+        habit.frequency === "daily" && habit.lastCompleted && habit.lastCompleted.getHours() === hour
           ? { ...habit, lastCompleted: now, streak: habit.streak + 1 }
           : habit
       )
@@ -715,8 +755,8 @@ export const TaskProvider = ({ children }: { children: ReactNode }) => {
       const incompleteTasks = prev.filter(task => !task.completed);
       const completedTasks = prev.filter(task => task.completed);
       
-      const reprioritized = incompleteTasks.map(task => {
-        const recalculatedPriority = calculatePriority(
+      const tasksWithScores: TaskWithPriorityScore[] = incompleteTasks.map(task => {
+        const priorityScore = calculatePriority(
           {
             name: task.name,
             deadline: task.deadline,
@@ -729,28 +769,135 @@ export const TaskProvider = ({ children }: { children: ReactNode }) => {
         
         return {
           ...task,
-          priority: recalculatedPriority
+          priorityScore,
+          priority: priorityScore > 66 ? 'high' as const : priorityScore > 33 ? 'medium' as const : 'low' as const
         };
       });
       
-      reprioritized.sort((a, b) => b.priority - a.priority);
+      tasksWithScores.sort((a, b) => b.priorityScore - a.priorityScore);
       
-      return [...reprioritized, ...completedTasks];
+      return [...tasksWithScores, ...completedTasks];
     });
   };
   
   const suggestHabit = () => {
-    const habitSuggestion = detectHabitPattern(tasks);
-    if (!habitSuggestion) return;
+    const completedTasks = tasks.filter(task => task.completed);
+    if (completedTasks.length < 5) return;
+    
+    const timeDistribution = {
+      morning: 0,
+      afternoon: 0,
+      evening: 0,
+      night: 0
+    };
+    
+    const moodDistribution: Record<string, number> = {};
+    const taskTypeDistribution: Record<string, number> = {};
+    
+    completedTasks.forEach(task => {
+      const completedAt = task.completedAt || new Date();
+      const hour = completedAt.getHours();
+      
+      if (hour >= 5 && hour < 12) timeDistribution.morning++;
+      else if (hour >= 12 && hour < 17) timeDistribution.afternoon++;
+      else if (hour >= 17 && hour < 22) timeDistribution.evening++;
+      else timeDistribution.night++;
+      
+      if (task.mood) {
+        moodDistribution[task.mood] = (moodDistribution[task.mood] || 0) + 1;
+      }
+      
+      // Track task types based on keywords
+      const taskText = task.name.toLowerCase();
+      if (taskText.includes('bug') || taskText.includes('fix')) {
+        taskTypeDistribution['debugging'] = (taskTypeDistribution['debugging'] || 0) + 1;
+      } else if (taskText.includes('feature') || taskText.includes('implement')) {
+        taskTypeDistribution['feature'] = (taskTypeDistribution['feature'] || 0) + 1;
+      } else if (taskText.includes('test') || taskText.includes('review')) {
+        taskTypeDistribution['testing'] = (taskTypeDistribution['testing'] || 0) + 1;
+      }
+    });
+    
+    let mostProductiveTime: "morning" | "afternoon" | "evening" | "night" = "morning";
+    let maxTime = timeDistribution.morning;
+    
+    if (timeDistribution.afternoon > maxTime) {
+      mostProductiveTime = "afternoon";
+      maxTime = timeDistribution.afternoon;
+    }
+    if (timeDistribution.evening > maxTime) {
+      mostProductiveTime = "evening";
+      maxTime = timeDistribution.evening;
+    }
+    if (timeDistribution.night > maxTime) {
+      mostProductiveTime = "night";
+      maxTime = timeDistribution.night;
+    }
+    
+    let preferredMood: "Creative" | "Focused" | "Relaxed" | "Energetic" | "Tired" | undefined;
+    let maxMood = 0;
+    
+    Object.entries(moodDistribution).forEach(([mood, count]) => {
+      if (count > maxMood) {
+        preferredMood = mood as any;
+        maxMood = count;
+      }
+    });
+    
+    // Find most successful task type
+    let preferredTaskType = '';
+    let maxTaskType = 0;
+    
+    Object.entries(taskTypeDistribution).forEach(([type, count]) => {
+      if (count > maxTaskType) {
+        preferredTaskType = type;
+        maxTaskType = count;
+      }
+    });
+    
+    let habitName = "";
+    let habitDescription = "";
+    
+    if (mostProductiveTime === "morning") {
+      habitName = "Morning coding session";
+      habitDescription = "You're most productive in the morning";
+    } else if (mostProductiveTime === "afternoon") {
+      habitName = "Afternoon productivity block";
+      habitDescription = "Your peak performance is in the afternoon";
+    } else if (mostProductiveTime === "evening") {
+      habitName = "Evening dev work";
+      habitDescription = "Evening hours are your most productive";
+    } else {
+      habitName = "Night owl coding";
+      habitDescription = "You excel at night coding sessions";
+    }
+    
+    if (preferredMood) {
+      habitName += ` when ${preferredMood.toLowerCase()}`;
+      habitDescription += `, especially when you're feeling ${preferredMood.toLowerCase()}`;
+    }
+    
+    if (preferredTaskType) {
+      habitDescription += `. You're particularly good at ${preferredTaskType} tasks`;
+    }
     
     const existingSimilar = habits.find(h => 
-      h.preferredTimeOfDay === habitSuggestion.preferredTimeOfDay && 
-      h.preferredMood === habitSuggestion.preferredMood
+      h.frequency === "daily" && h.lastCompleted && h.lastCompleted.getHours() === new Date().getHours() && 
+      h.preferredMood === preferredMood
     );
     
     if (!existingSimilar) {
-      setHabits(prev => [...prev, habitSuggestion]);
-      toast.success(`New habit detected! Try "${habitSuggestion.name}" for increased productivity.`, {
+      const newHabit: Habit = {
+        id: Date.now().toString(),
+        name: habitName,
+        frequency: "daily",
+        streak: 0,
+        lastCompleted: undefined,
+        preferredMood: preferredMood,
+      };
+      
+      setHabits(prev => [...prev, newHabit]);
+      toast.success(`New habit detected! ${habitDescription}`, {
         duration: 5000
       });
     }
@@ -884,6 +1031,210 @@ export const TaskProvider = ({ children }: { children: ReactNode }) => {
     toast.success(`Task difficulty set to ${rating}`);
   };
 
+  const deleteCompletedTasks = (useForTraining: boolean) => {
+    const completedTasks = tasks.filter(task => task.completed);
+    
+    if (useForTraining) {
+      // Process completed tasks for AI training before deletion
+      completedTasks.forEach(task => {
+        if (task.completed && task.completedAt) {
+          console.log(`Training data from completed task: ${task.name}`, {
+            completedAt: task.completedAt,
+            mood: task.mood,
+            actualTime: task.actualTime,
+            difficulty: task.difficulty
+          });
+          
+          if (task.mood) {
+            // Use this data to refine mood-based suggestions
+          }
+        }
+      });
+    }
+    
+    setTasks(prev => prev.filter(task => !task.completed));
+    toast.success("Completed tasks deleted successfully");
+  };
+
+  const updateAITrainingPreference = (enabled: boolean) => {
+    setAITrainingEnabled(enabled);
+    toast.success(`AI training ${enabled ? 'enabled' : 'disabled'}`);
+  };
+
+  const getAIScheduleSuggestions = () => {
+    const incompleteTasks = tasks.filter(task => !task.completed);
+    const projectTasks = incompleteTasks.filter(task => task.projectId);
+    const standaloneTasks = incompleteTasks.filter(task => !task.projectId);
+    
+    // Group tasks by project
+    const projectGroups = projectTasks.reduce((groups, task) => {
+      const projectId = task.projectId!;
+      if (!groups[projectId]) {
+        groups[projectId] = [];
+      }
+      groups[projectId].push(task);
+      return groups;
+    }, {} as Record<string, Task[]>);
+    
+    // Generate daily suggestions
+    const dailySuggestions: string[] = [];
+    if (currentMood === "Creative") {
+      dailySuggestions.push("Schedule UI/UX design tasks for today when you're feeling creative");
+    } else if (currentMood === "Focused") {
+      dailySuggestions.push("Focus on complex coding tasks today - perfect for debugging");
+    } else if (currentMood === "Energetic") {
+      dailySuggestions.push("Great time to tackle challenging features or refactoring");
+    } else if (currentMood === "Relaxed") {
+      dailySuggestions.push("Consider working on documentation or planning today");
+    } else if (currentMood === "Tired") {
+      dailySuggestions.push("Focus on simple tasks or take a break to recharge");
+    }
+    
+    // Add time-based suggestions
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 12) {
+      dailySuggestions.push("Morning is a great time for planning and starting new features");
+    } else if (hour >= 12 && hour < 17) {
+      dailySuggestions.push("Afternoon is ideal for implementation and coding");
+    } else if (hour >= 17 && hour < 22) {
+      dailySuggestions.push("Evening is perfect for reviewing and testing");
+    } else {
+      dailySuggestions.push("Night coding can be productive for focused tasks");
+    }
+    
+    // Generate weekly suggestions
+    const weeklySuggestions: string[] = [];
+    const projectIds = Object.keys(projectGroups);
+    
+    if (projectIds.length > 0) {
+      weeklySuggestions.push(`Plan to work on ${projectIds.length} project${projectIds.length > 1 ? 's' : ''} this week`);
+      
+      // Suggest project-specific scheduling
+      projectIds.forEach(projectId => {
+        const project = projects.find(p => p.id === projectId);
+        if (project) {
+          const projectTasks = projectGroups[projectId];
+          const totalEstimatedTime = projectTasks.reduce((sum, task) => sum + task.estimatedTime, 0);
+          const hours = Math.ceil(totalEstimatedTime / 60);
+          
+          weeklySuggestions.push(`Allocate ${hours} hours this week for "${project.name}"`);
+        }
+      });
+    }
+    
+    // Generate monthly suggestions
+    const monthlySuggestions: string[] = [];
+    
+    // Suggest project completion timelines
+    projectIds.forEach(projectId => {
+      const project = projects.find(p => p.id === projectId);
+      if (project && project.deadline) {
+        const daysUntilDeadline = Math.ceil((new Date(project.deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+        
+        if (daysUntilDeadline <= 30) {
+          monthlySuggestions.push(`"${project.name}" is due in ${daysUntilDeadline} days - prioritize accordingly`);
+        }
+      }
+    });
+    
+    // Add habit-based suggestions
+    if (habits.length > 0) {
+      const mostProductiveHabit = habits.reduce((best, habit) => 
+        habit.streak > best.streak ? habit : best
+      );
+      
+      monthlySuggestions.push(`Maintain your "${mostProductiveHabit.name}" habit for optimal productivity`);
+    }
+    
+    return {
+      daily: dailySuggestions,
+      weekly: weeklySuggestions,
+      monthly: monthlySuggestions
+    };
+  };
+  
+  const getMoodBasedSuggestions = () => {
+    const incompleteTasks = tasks.filter(task => !task.completed);
+    
+    // Filter tasks that match the current mood
+    const moodTasks = incompleteTasks.filter(task => 
+      task.mood === currentMood
+    );
+    
+    // If no tasks match the current mood, suggest tasks based on mood compatibility
+    if (moodTasks.length === 0) {
+      let compatibleMoods: string[] = [];
+      
+      if (currentMood === "Creative") {
+        compatibleMoods = ["Relaxed", "Energetic"];
+      } else if (currentMood === "Focused") {
+        compatibleMoods = ["Energetic", "Creative"];
+      } else if (currentMood === "Relaxed") {
+        compatibleMoods = ["Creative", "Tired"];
+      } else if (currentMood === "Energetic") {
+        compatibleMoods = ["Focused", "Creative"];
+      } else if (currentMood === "Tired") {
+        compatibleMoods = ["Relaxed", "Focused"];
+      }
+      
+      return incompleteTasks
+        .filter(task => compatibleMoods.includes(task.mood || ""))
+        .sort((a, b) => b.priority - a.priority)
+        .slice(0, 3);
+    }
+    
+    // Return mood-matched tasks sorted by priority
+    return moodTasks
+      .sort((a, b) => b.priority - a.priority)
+      .slice(0, 3);
+  };
+
+  const getTaskStats = (): TaskStats => {
+    const completedTasks = tasks.filter(task => task.completed);
+    const taskCount = tasks.length;
+    const completedCount = completedTasks.length;
+    
+    const completionRate = taskCount > 0 
+      ? Math.floor((completedCount / taskCount) * 100) 
+      : 0;
+    
+    const totalCompletionTime = completedTasks.reduce((sum, task) => {
+      if (task.completedAt && task.createdAt) {
+        const timeDiff = task.completedAt.getTime() - task.createdAt.getTime();
+        return Number(sum) + Number(timeDiff);
+      }
+      return Number(sum);
+    }, 0);
+    
+    const averageCompletionTime = completedCount > 0 
+      ? Math.floor(Number(totalCompletionTime) / Number(completedCount)) 
+      : 0;
+    
+    const highPriorityTasks = tasks.filter(task => task.priority === 'high').length;
+    
+    const productivityScore = Math.min(100, Math.floor(
+      Number(completionRate) * 0.4 + 
+      Number(highPriorityTasks) * 10 + 
+      Number(completedCount) * 5
+    ));
+
+    return {
+      completionRate,
+      averageCompletionTime,
+      productivityScore,
+      highPriorityTasks
+    };
+  };
+
+  const updateTaskPriority = (taskId: string, priority: "low" | "medium" | "high") => {
+    setTasks(prev =>
+      prev.map(task =>
+        task.id === taskId ? { ...task, priority } : task
+      )
+    );
+    prioritizeTasks();
+  };
+
   return (
     <TaskContext.Provider value={{ 
       tasks, 
@@ -905,7 +1256,15 @@ export const TaskProvider = ({ children }: { children: ReactNode }) => {
       completeSubtask,
       deleteSubtask,
       getProjectResources,
-      setTaskDifficulty
+      setTaskDifficulty,
+      deleteCompletedTasks,
+      updateAITrainingPreference,
+      getAIScheduleSuggestions,
+      getMoodBasedSuggestions,
+      getTaskStats,
+      aiTrainingEnabled,
+      updateTaskPriority,
+      calculateProductivityScore
     }}>
       {children}
     </TaskContext.Provider>
