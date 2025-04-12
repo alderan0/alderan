@@ -430,44 +430,118 @@ export const TaskProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Generate a project and tasks from requirements using AI
   const generateProjectFromRequirements = async (requirements: string) => {
     try {
-      // Mock implementation for generating projects from AI
-      console.log("Generating project from requirements:", requirements);
+      console.log("Generating project from PRD:", requirements);
       
-      // Create a new project based on the requirements
-      const projectName = requirements.split('\n')[0] || "New AI Generated Project";
-      const projectDesc = "AI generated project based on requirements";
+      // Extract project name from first line or paragraph
+      const projectName = requirements.split('\n')[0].substring(0, 50) || "New AI Generated Project";
+      
+      // Extract project description
+      const projectDesc = "AI generated project based on PRD analysis";
       
       const newProject: Project = {
         id: uuidv4(),
         name: projectName,
         description: projectDesc,
         completed: false,
-        createdAt: new Date()
+        createdAt: new Date(),
+        tasks: []
       };
       
-      // Add the project
+      // Create project
       setProjects(prev => [...prev, newProject]);
       
-      // Generate some mock tasks based on requirements
-      const keyPhrases = requirements.split('\n')
-        .filter(line => line.trim().length > 10)
-        .slice(0, 5);
+      // AI analysis to extract tasks (simulated)
+      // In a real implementation, this would use NLP or LLM to extract tasks
+      const sections = requirements.split('\n\n');
       
-      const newTasks: Task[] = keyPhrases.map((phrase, index) => ({
-        id: uuidv4(),
-        name: `Task ${index + 1}: ${phrase.slice(0, 30)}...`,
-        description: phrase,
-        deadline: new Date(Date.now() + (index + 1) * 86400000),
-        completed: false,
-        estimatedTime: 60 + index * 30,
-        priority: 80 - index * 10,
-        projectId: newProject.id,
-        createdAt: new Date(),
-        subtasks: []
-      }));
+      // Generate main tasks based on sections or major requirements
+      const mainTasks: Task[] = [];
+      const taskPatterns = [
+        /Features?:/i,
+        /Requirements?:/i,
+        /User\s*Flow/i,
+        /Business\s*Rules?:/i,
+        /Core\s*Features?:/i,
+        /Implementation/i,
+        /Plan/i,
+        /UI\/UX/i,
+        /Data\s*Model/i
+      ];
+      
+      // Identify potential main tasks from the PRD sections
+      sections.forEach((section, index) => {
+        const hasTaskPattern = taskPatterns.some(pattern => pattern.test(section));
+        
+        if (hasTaskPattern || (section.length > 50 && index < 10)) {
+          const taskName = section.split('\n')[0].substring(0, 80).trim();
+          const taskDescription = section.length > 100 ? section.substring(0, 250) + "..." : section;
+          
+          const today = new Date();
+          const deadline = new Date();
+          deadline.setDate(today.getDate() + (index + 1) * 3); // Stagger deadlines
+          
+          const mainTask: Task = {
+            id: uuidv4(),
+            name: taskName || `Task ${index + 1}`,
+            description: taskDescription,
+            deadline: deadline,
+            completed: false,
+            estimatedTime: 120 + index * 30, // 2 hours + additional time per section
+            priority: 90 - (index * 5), // Decrease priority as we go through sections
+            difficulty: 60, // Medium difficulty by default
+            projectId: newProject.id,
+            createdAt: new Date(),
+            subtasks: []
+          };
+          
+          mainTasks.push(mainTask);
+        }
+      });
+      
+      // Generate subtasks for each main task
+      mainTasks.forEach(mainTask => {
+        // Find bullet points or numbered lists within the section
+        const taskDesc = mainTask.description || "";
+        const lines = taskDesc.split('\n');
+        const bulletPoints = lines.filter(line => 
+          line.trim().startsWith('•') || 
+          line.trim().startsWith('-') || 
+          /^\d+\./.test(line.trim())
+        );
+        
+        // Create subtasks from bullet points
+        bulletPoints.forEach((point, i) => {
+          const subtaskName = point.replace(/^[•\-\d\.]+\s*/, '').trim();
+          
+          if (subtaskName.length > 3) {
+            mainTask.subtasks.push({
+              id: uuidv4(),
+              name: subtaskName.substring(0, 100),
+              completed: false,
+              taskId: mainTask.id
+            });
+          }
+        });
+        
+        // If no bullet points were found, create generic subtasks
+        if (mainTask.subtasks.length === 0) {
+          const subtaskNames = [
+            'Research', 'Planning', 'Implementation', 'Testing', 'Review'
+          ];
+          
+          subtaskNames.slice(0, 3).forEach(name => {
+            mainTask.subtasks.push({
+              id: uuidv4(),
+              name: `${name} for ${mainTask.name.substring(0, 30)}...`,
+              completed: false,
+              taskId: mainTask.id
+            });
+          });
+        }
+      });
       
       // Add the tasks
-      setTasks(prev => [...prev, ...newTasks]);
+      setTasks(prev => [...prev, ...mainTasks]);
       
       return Promise.resolve();
     } catch (error) {
