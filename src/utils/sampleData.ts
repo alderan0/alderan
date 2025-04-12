@@ -30,7 +30,8 @@ export const generateSampleTasks = (): Task[] => {
       priority: 85,
       difficulty: 30,
       mood: 'Focused',
-      createdAt: new Date(now.getTime() - 24 * 60 * 60 * 1000)
+      createdAt: new Date(now.getTime() - 24 * 60 * 60 * 1000),
+      subtasks: []
     },
     {
       id: uuidv4(),
@@ -42,7 +43,8 @@ export const generateSampleTasks = (): Task[] => {
       priority: 70,
       difficulty: 60,
       mood: 'Creative',
-      createdAt: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000)
+      createdAt: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000),
+      subtasks: []
     },
     {
       id: uuidv4(),
@@ -54,7 +56,8 @@ export const generateSampleTasks = (): Task[] => {
       priority: 90,
       difficulty: 75,
       mood: 'Focused',
-      createdAt: new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000)
+      createdAt: new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000),
+      subtasks: []
     },
     {
       id: uuidv4(),
@@ -66,7 +69,8 @@ export const generateSampleTasks = (): Task[] => {
       priority: 65,
       difficulty: 60,
       mood: 'Creative',
-      createdAt: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000)
+      createdAt: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000),
+      subtasks: []
     },
     {
       id: uuidv4(),
@@ -80,7 +84,8 @@ export const generateSampleTasks = (): Task[] => {
       difficulty: 80,
       mood: 'Focused',
       createdAt: new Date(now.getTime() - 4 * 24 * 60 * 60 * 1000),
-      completedAt: new Date(now.getTime() - 12 * 60 * 60 * 1000)
+      completedAt: new Date(now.getTime() - 12 * 60 * 60 * 1000),
+      subtasks: []
     },
     {
       id: uuidv4(),
@@ -92,7 +97,8 @@ export const generateSampleTasks = (): Task[] => {
       priority: 75,
       difficulty: 50,
       mood: 'Energetic',
-      createdAt: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000)
+      createdAt: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000),
+      subtasks: []
     },
     {
       id: uuidv4(),
@@ -104,7 +110,8 @@ export const generateSampleTasks = (): Task[] => {
       priority: 60,
       difficulty: 40,
       mood: 'Creative',
-      createdAt: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000)
+      createdAt: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000),
+      subtasks: []
     },
   ];
 

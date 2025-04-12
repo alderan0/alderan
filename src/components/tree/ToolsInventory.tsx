@@ -1,4 +1,3 @@
-
 import { useTasks } from "@/context/TaskContext";
 import { useTree } from "@/context/TreeContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -68,19 +67,13 @@ export const ToolsInventory = () => {
     }
   };
   
-  // Get available tools based on tree tier
   const getEligibleTools = () => {
-    // For tools with tier property, we'll assume they're in level ranges
-    // sapling: levels 1-5
-    // young: levels 6-10
-    // mature: levels 11+
     if (currentTier === "sapling") {
       return unusedTools.filter(tool => !tool.minLevel || tool.minLevel <= 5);
     }
     if (currentTier === "young") {
       return unusedTools.filter(tool => !tool.minLevel || tool.minLevel <= 10);
     }
-    // Mature tier has access to all tools
     return unusedTools;
   };
   
@@ -138,19 +131,19 @@ export const ToolsInventory = () => {
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">{tool.description}</p>
                   <div className="flex flex-wrap gap-1 mt-1">
-                    {tool.effect.height && (
+                    {tool.effect?.height && (
                       <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">+{tool.effect.height} Height</span>
                     )}
-                    {tool.effect.leaves && (
+                    {tool.effect?.leaves && (
                       <span className="text-xs bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">+{tool.effect.leaves} Leaves</span>
                     )}
-                    {tool.effect.health && (
+                    {tool.effect?.health && (
                       <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">+{tool.effect.health} Health</span>
                     )}
-                    {tool.effect.beauty && (
+                    {tool.effect?.beauty && (
                       <span className="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full">+{tool.effect.beauty} Beauty</span>
                     )}
-                    {tool.effect.style && (
+                    {tool.effect?.style && (
                       <span className="text-xs bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full">{tool.effect.style} Style</span>
                     )}
                   </div>
@@ -167,7 +160,6 @@ export const ToolsInventory = () => {
             </motion.div>
           ))}
           
-          {/* Locked tools section */}
           {lockedTools.length > 0 && (
             <div className="mt-6">
               <h3 className="text-sm font-medium text-muted-foreground mb-2">Locked Tools (Level Restricted)</h3>

@@ -17,7 +17,6 @@ const ProjectsPage = () => {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const isMobile = useIsMobile();
 
-  // Filter for active and completed projects
   const activeProjects = projects.filter(p => !p.completed);
   const completedProjects = projects.filter(p => p.completed);
 
@@ -101,7 +100,7 @@ const ProjectsPage = () => {
             <Card className="bg-muted/50">
               <CardContent className="flex flex-col items-center justify-center py-8 text-center">
                 <p className="text-muted-foreground mb-4">No active projects. Create one to get started!</p>
-                <Button onClick={() => setIsDialogOpen(true)} variant="outline" className="gap-2">
+                <Button onClick={() => setIsAddDialogOpen(true)} variant="outline" className="gap-2">
                   <PlusCircle className="h-4 w-4" />
                   Create Project
                 </Button>

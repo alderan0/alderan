@@ -682,17 +682,17 @@ export const TreeProvider = ({ children }: { children: ReactNode }) => {
       const newTree = { ...prev };
       
       // Apply the reward effects to tree stats
-      if (reward.effect.height) newTree.height = Math.min(100, newTree.height + reward.effect.height);
-      if (reward.effect.leaves) newTree.leaves = Math.min(100, newTree.leaves + reward.effect.leaves);
-      if (reward.effect.health) newTree.health = Math.min(100, newTree.health + reward.effect.health);
-      if (reward.effect.beauty) newTree.beauty = Math.min(100, newTree.beauty + reward.effect.beauty);
+      if (reward.effect?.height) newTree.height = Math.min(100, newTree.height + reward.effect.height);
+      if (reward.effect?.leaves) newTree.leaves = Math.min(100, newTree.leaves + reward.effect.leaves);
+      if (reward.effect?.health) newTree.health = Math.min(100, newTree.health + reward.effect.health);
+      if (reward.effect?.beauty) newTree.beauty = Math.min(100, newTree.beauty + reward.effect.beauty);
       
       // Apply special effects or styles
-      if (reward.effect.special) {
+      if (reward.effect?.special) {
         newTree.styles.special.push(reward.effect.special);
       }
       
-      if (reward.effect.style) {
+      if (reward.effect?.style) {
         switch(reward.effect.style) {
           case "syntax":
           case "pixel":
@@ -733,13 +733,13 @@ export const TreeProvider = ({ children }: { children: ReactNode }) => {
       const newTree = { ...prev };
       
       // Apply the tool effects to tree stats
-      if (tool.effect.height) newTree.height = Math.min(100, newTree.height + tool.effect.height);
-      if (tool.effect.leaves) newTree.leaves = Math.min(100, newTree.leaves + tool.effect.leaves);
-      if (tool.effect.health) newTree.health = Math.min(100, newTree.health + tool.effect.health);
-      if (tool.effect.beauty) newTree.beauty = Math.min(100, newTree.beauty + tool.effect.beauty);
+      if (tool.effect?.height) newTree.height = Math.min(100, newTree.height + tool.effect.height);
+      if (tool.effect?.leaves) newTree.leaves = Math.min(100, newTree.leaves + tool.effect.leaves);
+      if (tool.effect?.health) newTree.health = Math.min(100, newTree.health + tool.effect.health);
+      if (tool.effect?.beauty) newTree.beauty = Math.min(100, newTree.beauty + tool.effect.beauty);
       
       // Apply style changes based on tool
-      if (tool.effect.style) {
+      if (tool.effect?.style) {
         switch(tool.effect.style) {
           case "syntax":
           case "pixel":

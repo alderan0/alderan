@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -54,7 +53,14 @@ export interface Tool {
   description?: string;
   isActive: boolean;
   used?: boolean;
-  effect?: string;
+  effect?: {
+    height?: number;
+    leaves?: number;
+    health?: number;
+    beauty?: number;
+    special?: string;
+    style?: string;
+  };
   minLevel?: number;
 }
 
