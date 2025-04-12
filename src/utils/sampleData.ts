@@ -1,216 +1,260 @@
 
 import { Task, Project, Tool } from "@/context/TaskContext";
+import { v4 as uuidv4 } from "uuid";
 
-// Initialize local storage with sample data for testing purposes
-export const loadSampleData = () => {
-  // Check if we've already loaded sample data
-  if (localStorage.getItem('alreadyLoadedSampleData')) {
-    return;
+// Generate random date within 30 days (past or future)
+const randomDate = (future = true) => {
+  const date = new Date();
+  const range = future ? 30 : -30;
+  date.setDate(date.getDate() + Math.floor(Math.random() * range));
+  return date;
+};
+
+// Generate random profile data
+export const generateMockProfiles = (count = 10) => {
+  const profiles = [];
+  const names = ['Alex', 'Jordan', 'Taylor', 'Morgan', 'Casey', 'Riley', 'Jamie', 'Quinn', 'Avery', 'Sam', 'Blake', 'Dakota'];
+  const skillLevels = ['Beginner', 'Intermediate', 'Advanced', 'Expert'];
+  
+  for (let i = 0; i < count; i++) {
+    profiles.push({
+      id: uuidv4(),
+      name: `${names[Math.floor(Math.random() * names.length)]} ${String.fromCharCode(65 + Math.floor(Math.random() * 26)}.`,
+      skillLevel: skillLevels[Math.floor(Math.random() * skillLevels.length)],
+      points: Math.floor(Math.random() * 5000),
+      tasksCompleted: Math.floor(Math.random() * 100),
+      projectsCompleted: Math.floor(Math.random() * 10),
+      joinedDate: new Date(Date.now() - Math.floor(Math.random() * 90 * 24 * 60 * 60 * 1000)), // Random date within last 90 days
+      avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${i}`
+    });
   }
-
-  const today = new Date();
-  const tomorrow = new Date();
-  tomorrow.setDate(today.getDate() + 1);
   
-  const nextWeek = new Date();
-  nextWeek.setDate(today.getDate() + 7);
+  return profiles;
+};
+
+// Generate mock tasks
+export const generateMockTasks = (count = 15) => {
+  const tasks: Task[] = [];
+  const moods = ['Focused', 'Creative', 'Relaxed', 'Energetic', 'Tired'];
+  const taskNames = [
+    'Setup development environment', 
+    'Create component library', 
+    'Implement authentication flow', 
+    'Design landing page',
+    'Optimize database queries',
+    'Write unit tests',
+    'Fix cross-browser compatibility issues',
+    'Implement responsive design',
+    'Setup CI/CD pipeline',
+    'Create documentation',
+    'Review pull requests',
+    'Implement analytics',
+    'Optimize application performance',
+    'Add dark mode support',
+    'Implement search functionality'
+  ];
   
-  const yesterday = new Date();
-  yesterday.setDate(today.getDate() - 1);
-
-  // Sample tasks
-  const sampleTasks: Task[] = [
-    {
-      id: "task-1",
-      name: "Implement login functionality",
-      description: "Create a login screen with email and password fields, forgot password link, and form validation.",
-      deadline: tomorrow,
-      estimatedTime: 120,
-      completed: false,
-      priority: 90,
-      difficulty: 65,
-      mood: "Focused",
-      createdAt: today,
-      subtasks: [
-        { id: "subtask-1", name: "Create login form UI", completed: false, taskId: "task-1" },
-        { id: "subtask-2", name: "Implement form validation", completed: false, taskId: "task-1" },
-        { id: "subtask-3", name: "Connect to authentication API", completed: false, taskId: "task-1" }
-      ]
-    },
-    {
-      id: "task-2",
-      name: "Design dashboard wireframes",
-      description: "Create wireframes for the main dashboard including stats widgets, activity feed, and navigation.",
-      deadline: tomorrow,
-      estimatedTime: 90,
-      completed: false,
-      priority: 85,
-      difficulty: 50,
-      mood: "Creative",
-      createdAt: today,
+  for (let i = 0; i < count; i++) {
+    const completed = Math.random() > 0.7;
+    const estimatedTime = Math.floor(Math.random() * 120) + 15; // 15-135 minutes
+    const actualTime = completed ? Math.floor(estimatedTime * (Math.random() * 0.5 + 0.75)) : undefined; // +/- 25% of estimated
+    const deadline = randomDate(true);
+    const createdAt = new Date(Date.now() - Math.floor(Math.random() * 14 * 24 * 60 * 60 * 1000)); // Random date within last 14 days
+    const completedAt = completed ? new Date(createdAt.getTime() + Math.floor(Math.random() * 7 * 24 * 60 * 60 * 1000)) : undefined; // 0-7 days after creation
+    
+    const task: Task = {
+      id: uuidv4(),
+      name: taskNames[i % taskNames.length],
+      description: `Task description for ${taskNames[i % taskNames.length]}. This is a sample task for demonstration purposes.`,
+      deadline,
+      completed,
+      estimatedTime,
+      actualTime,
+      priority: Math.floor(Math.random() * 100),
+      mood: moods[Math.floor(Math.random() * moods.length)],
+      createdAt,
+      completedAt,
       subtasks: []
-    },
-    {
-      id: "task-3",
-      name: "Set up CI/CD pipeline",
-      description: "Configure GitHub Actions for continuous integration and automatic deployment to staging environment.",
-      deadline: nextWeek,
-      estimatedTime: 180,
-      completed: false,
-      priority: 75,
-      difficulty: 80,
-      mood: "Focused",
-      createdAt: today,
-      subtasks: []
-    },
-    {
-      id: "task-4",
-      name: "Write API documentation",
-      description: "Document all available API endpoints, request/response formats, and authentication requirements.",
-      deadline: nextWeek,
-      estimatedTime: 150,
-      completed: false,
-      priority: 60,
-      difficulty: 40,
-      mood: "Relaxed",
-      createdAt: today,
-      subtasks: []
-    },
-    {
-      id: "task-5",
-      name: "Fix payment processing bug",
-      description: "Investigate and resolve issue with payment processing failing for international credit cards.",
-      deadline: yesterday,
-      estimatedTime: 60,
-      completed: true,
-      actualTime: 90,
-      priority: 95,
-      difficulty: 70,
-      mood: "Focused",
-      createdAt: yesterday,
-      completedAt: today,
-      subtasks: []
-    },
-    {
-      id: "task-6",
-      name: "Update dependencies",
-      description: "Update all npm packages to their latest compatible versions and test for any breaking changes.",
-      deadline: nextWeek,
-      estimatedTime: 120,
-      completed: false,
-      priority: 50,
-      difficulty: 30,
-      mood: "Relaxed",
-      createdAt: today,
-      subtasks: []
-    },
-    {
-      id: "task-7",
-      name: "Create user onboarding flow",
-      description: "Design and implement a step-by-step onboarding process for new users.",
-      deadline: nextWeek,
-      estimatedTime: 240,
-      completed: false,
-      priority: 80,
-      difficulty: 60,
-      mood: "Creative",
-      createdAt: today,
-      subtasks: []
+    };
+    
+    // Add subtasks
+    const subtaskCount = Math.floor(Math.random() * 4) + 1;
+    for (let j = 0; j < subtaskCount; j++) {
+      task.subtasks.push({
+        id: uuidv4(),
+        name: `Subtask ${j + 1} for ${task.name}`,
+        completed: Math.random() > 0.5,
+        taskId: task.id
+      });
     }
-  ];
+    
+    tasks.push(task);
+  }
+  
+  return tasks;
+};
 
-  // Sample projects
-  const sampleProjects: Project[] = [
-    {
-      id: "project-1",
-      name: "E-commerce Website Redesign",
-      description: "Modernize the existing e-commerce platform with improved UX/UI, faster performance, and mobile responsiveness.",
-      deadline: new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000),
-      completed: false,
-      createdAt: new Date(today.getTime() - 15 * 24 * 60 * 60 * 1000)
-    },
-    {
-      id: "project-2",
-      name: "Mobile App Development",
-      description: "Create a cross-platform mobile app for both iOS and Android using React Native.",
-      deadline: new Date(today.getTime() + 60 * 24 * 60 * 60 * 1000),
-      completed: false,
-      createdAt: new Date(today.getTime() - 5 * 24 * 60 * 60 * 1000)
-    },
-    {
-      id: "project-3",
-      name: "Marketing Website",
-      description: "Design and develop a marketing website for a new product launch.",
-      completed: true,
-      createdAt: new Date(today.getTime() - 45 * 24 * 60 * 60 * 1000),
-      completedAt: new Date(today.getTime() - 10 * 24 * 60 * 60 * 1000)
-    }
+// Generate mock projects
+export const generateMockProjects = (count = 5, tasks: Task[] = []) => {
+  const projects: Project[] = [];
+  const projectNames = [
+    'E-commerce Platform', 
+    'Personal Portfolio', 
+    'Admin Dashboard',
+    'Mobile App UI',
+    'Content Management System',
+    'Social Media Integration',
+    'API Gateway',
+    'Interactive Data Visualization',
+    'Progressive Web App',
+    'User Authentication System'
   ];
-
-  // Sample productivity tools
-  const sampleTools: Tool[] = [
-    {
-      id: "tool-1",
-      name: "Focus Boost",
-      type: "productivity",
-      description: "Increases your focus for the next work session",
-      isActive: false,
-      effect: {
-        health: 5,
-        leaves: 10
+  
+  for (let i = 0; i < count; i++) {
+    const completed = Math.random() > 0.8;
+    const createdAt = new Date(Date.now() - Math.floor(Math.random() * 30 * 24 * 60 * 60 * 1000)); // Random date within last 30 days
+    const completedAt = completed ? new Date(createdAt.getTime() + Math.floor(Math.random() * 14 * 24 * 60 * 60 * 1000)) : undefined; // 0-14 days after creation
+    
+    const project: Project = {
+      id: uuidv4(),
+      name: projectNames[i % projectNames.length],
+      description: `A project for ${projectNames[i % projectNames.length]}. This includes various tasks and features to be implemented.`,
+      deadline: randomDate(true),
+      completed,
+      createdAt,
+      completedAt
+    };
+    
+    projects.push(project);
+  }
+  
+  // Assign some tasks to projects
+  if (tasks.length > 0) {
+    tasks.forEach((task, index) => {
+      if (index < tasks.length * 0.7) { // 70% of tasks belong to projects
+        const projectIndex = Math.floor(Math.random() * projects.length);
+        task.projectId = projects[projectIndex].id;
       }
-    },
-    {
-      id: "tool-2",
-      name: "Rainbow Leaves",
-      type: "decoration",
-      description: "Adds vibrant colors to your tree's leaves",
-      isActive: false,
+    });
+  }
+  
+  return projects;
+};
+
+// Generate mock tools
+export const generateMockTools = (count = 5) => {
+  const tools: Tool[] = [];
+  const toolNames = [
+    'Productivity Booster',
+    'Focus Timer',
+    'Creativity Enhancer',
+    'Task Analyzer',
+    'Energy Drink',
+    'AI Assistant',
+    'Code Generator',
+    'Bug Hunter',
+    'Time Saver',
+    'Code Formatter'
+  ];
+  
+  const toolTypes = ['booster', 'timer', 'analyzer', 'generator', 'enhancer'];
+  
+  for (let i = 0; i < count; i++) {
+    const tool: Tool = {
+      id: uuidv4(),
+      name: toolNames[i % toolNames.length],
+      type: toolTypes[i % toolTypes.length],
+      description: `A tool that helps with ${toolNames[i % toolNames.length].toLowerCase()}. Use it to improve your productivity.`,
+      isActive: Math.random() > 0.5,
+      used: Math.random() > 0.7,
       effect: {
-        beauty: 15,
-        style: "rainbow"
-      }
-    },
-    {
-      id: "tool-3",
-      name: "Growth Fertilizer",
-      type: "growth",
-      description: "Accelerates your tree's growth",
-      isActive: true,
-      effect: {
-        height: 20,
-        health: 10
+        height: Math.floor(Math.random() * 10) + 1,
+        leaves: Math.floor(Math.random() * 20) + 1,
+        health: Math.floor(Math.random() * 100),
+        beauty: Math.floor(Math.random() * 100),
+        special: ['Glow', 'Sparkle', 'Rainbow', 'Wave', 'Pulse'][Math.floor(Math.random() * 5)],
+        style: ['Modern', 'Retro', 'Nature', 'Tech', 'Minimal'][Math.floor(Math.random() * 5)]
+      },
+      minLevel: Math.floor(Math.random() * 5) + 1
+    };
+    
+    tools.push(tool);
+  }
+  
+  return tools;
+};
+
+// Generate mock habits
+export const generateMockHabits = (count = 5) => {
+  const habits = [];
+  const habitNames = [
+    'Write code daily',
+    'Review documentation',
+    'Read tech articles',
+    'Participate in code reviews',
+    'Learn a new concept',
+    'Practice algorithmic problems',
+    'Contribute to open-source',
+    'Refactor old code',
+    'Meditate before coding',
+    'Take short breaks'
+  ];
+  
+  for (let i = 0; i < count; i++) {
+    const createdAt = new Date(Date.now() - Math.floor(Math.random() * 30 * 24 * 60 * 60 * 1000));
+    const lastCompleted = Math.random() > 0.3 ? new Date(Date.now() - Math.floor(Math.random() * 3 * 24 * 60 * 60 * 1000)) : null;
+    
+    habits.push({
+      id: uuidv4(),
+      name: habitNames[i % habitNames.length],
+      created_at: createdAt,
+      last_completed: lastCompleted,
+      streak: Math.floor(Math.random() * 30),
+      user_id: "sample-user"
+    });
+  }
+  
+  return habits;
+};
+
+// Load all sample data together
+export const loadSampleData = () => {
+  try {
+    // Check if sample data already exists
+    const tasks = localStorage.getItem("tasks");
+    const projects = localStorage.getItem("projects");
+    const tools = localStorage.getItem("tools");
+    const habits = localStorage.getItem("habits");
+    
+    // If data doesn't exist, create it
+    if (!tasks) {
+      const mockTasks = generateMockTasks(15);
+      localStorage.setItem("tasks", JSON.stringify(mockTasks));
+    }
+    
+    if (!projects) {
+      const parsedTasks = tasks ? JSON.parse(tasks) : [];
+      const mockProjects = generateMockProjects(5, parsedTasks);
+      localStorage.setItem("projects", JSON.stringify(mockProjects));
+      
+      // Update tasks with project IDs
+      if (parsedTasks.length > 0 && parsedTasks[0].projectId) {
+        localStorage.setItem("tasks", JSON.stringify(parsedTasks));
       }
     }
-  ];
-
-  // Sample habits
-  const sampleHabits = [
-    {
-      id: "habit-1",
-      name: "Morning coding session",
-      streak: 5,
-      lastCompleted: new Date(today.getTime() - 24 * 60 * 60 * 1000)
-    },
-    {
-      id: "habit-2",
-      name: "Document progress",
-      streak: 3,
-      lastCompleted: today
-    },
-    {
-      id: "habit-3",
-      name: "Review code",
-      streak: 0,
-      lastCompleted: new Date(today.getTime() - 3 * 24 * 60 * 60 * 1000)
+    
+    if (!tools) {
+      const mockTools = generateMockTools(8);
+      localStorage.setItem("tools", JSON.stringify(mockTools));
     }
-  ];
-
-  // Set sample data in localStorage
-  localStorage.setItem('tasks', JSON.stringify(sampleTasks));
-  localStorage.setItem('projects', JSON.stringify(sampleProjects));
-  localStorage.setItem('tools', JSON.stringify(sampleTools));
-  localStorage.setItem('habits', JSON.stringify(sampleHabits));
-  localStorage.setItem('currentMood', JSON.stringify("Focused"));
-  localStorage.setItem('alreadyLoadedSampleData', 'true');
+    
+    if (!habits) {
+      const mockHabits = generateMockHabits(5);
+      localStorage.setItem("habits", JSON.stringify(mockHabits));
+    }
+    
+    console.log("Sample data loaded successfully");
+  } catch (error) {
+    console.error("Error loading sample data:", error);
+  }
 };

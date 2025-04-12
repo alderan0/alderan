@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader2, Sparkle, FileText, LayoutList, FileSymlink } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/lib/supabase";
 
 interface GenerateProjectDialogProps {
   open: boolean;
@@ -33,7 +34,31 @@ export const GenerateProjectDialog = ({ open, onOpenChange }: GenerateProjectDia
     setIsLoading(true);
     
     try {
-      await generateProjectFromRequirements(requirements);
+      // Call the OpenAI edge function to process the PRD
+      const { data, error } = await supabase.functions.invoke('openai-assistant', {
+        body: { 
+          prompt: requirements,
+          type: "generate_project" 
+        }
+      });
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      if (!data || !data.parsedTasks || data.parsedTasks.length === 0) {
+        throw new Error("Could not generate tasks from the PRD. Please try again with more detailed requirements.");
+      }
+      
+      // Format for project name
+      const projectName = requirements.split('\n')[0].substring(0, 50) || "New AI Generated Project";
+      
+      // Extract project description (use first few sentences)
+      const projectDesc = requirements.substring(0, 250) + (requirements.length > 250 ? "..." : "");
+      
+      // Generate the project with the AI-generated tasks
+      await generateProjectFromRequirements(projectName, projectDesc, data.parsedTasks);
+      
       toast.success("Project successfully generated from your PRD!");
       
       // Reset form fields

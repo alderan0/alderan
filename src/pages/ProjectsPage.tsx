@@ -10,6 +10,7 @@ import { GenerateProjectDialog } from "@/components/projects/GenerateProjectDial
 import { ProjectDetail } from "@/components/projects/ProjectDetail";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
+import { AppNav } from "@/components/layout/AppNav";
 
 const ProjectsPage = () => {
   const { projects } = useTasks();
@@ -30,11 +31,16 @@ const ProjectsPage = () => {
   };
 
   if (selectedProjectId) {
-    return <ProjectDetail projectId={selectedProjectId} onBack={closeProjectDetail} />;
+    return (
+      <>
+        <ProjectDetail projectId={selectedProjectId} onBack={closeProjectDetail} />
+        <AppNav />
+      </>
+    );
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-8 animate-in fade-in duration-500 pb-20">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Projects</h1>
@@ -164,6 +170,9 @@ const ProjectsPage = () => {
         open={isGenerateDialogOpen}
         onOpenChange={setIsGenerateDialogOpen}
       />
+      
+      {/* Bottom Navigation */}
+      <AppNav />
     </div>
   );
 };

@@ -1,10 +1,11 @@
+
 import { SuggestedTasks } from "@/components/tasks/SuggestedTasks";
 import { TaskList } from "@/components/tasks/TaskList";
 import { AddTaskForm } from "@/components/tasks/AddTaskForm";
 import { MoodSelector } from "@/components/tasks/MoodSelector";
 import { HabitTracker } from "@/components/tasks/HabitTracker";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, Code, LineChart, FolderKanban } from "lucide-react";
+import { Calendar, LineChart, FolderKanban } from "lucide-react";
 import { useTasks } from "@/context/TaskContext";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { AIScheduleRecommendations } from "@/components/tasks/AIScheduleRecommendations";
@@ -12,6 +13,7 @@ import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
+import { AppNav } from "@/components/layout/AppNav";
 
 const TasksPage = () => {
   const { currentMood, projects } = useTasks();
@@ -105,6 +107,9 @@ const TasksPage = () => {
           </TabsContent>
         </Tabs>
       </div>
+      
+      {/* Bottom Navigation */}
+      <AppNav />
     </div>
   );
 };
