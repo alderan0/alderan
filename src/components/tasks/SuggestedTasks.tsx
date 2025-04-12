@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
 
 export const SuggestedTasks = () => {
-  const { suggestedTasks } = useTasks();
+  const { suggestedTasks, completeTask } = useTasks();
   
   if (suggestedTasks.length === 0) {
     return null;
@@ -32,7 +32,12 @@ export const SuggestedTasks = () => {
                     <span>Due {formatDistanceToNow(task.deadline, { addSuffix: true })}</span>
                   </div>
                 </div>
-                <Button variant="ghost" size="sm" className="ml-2">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="ml-2"
+                  onClick={() => completeTask(task.id, task.estimatedTime)}
+                >
                   <Check size={16} />
                 </Button>
               </div>

@@ -1,13 +1,17 @@
+
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { AuthProvider } from "@/context/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import TasksPage from "@/pages/TasksPage";
+import TreePage from "@/pages/TreePage";
 import ProjectsPage from "@/pages/ProjectsPage";
 import CommunityPage from "@/pages/CommunityPage";
 import AuthPage from "@/pages/auth/AuthPage";
 import LandingPage from "@/pages/LandingPage";
 import { Toaster } from "@/components/ui/toaster";
+import { TaskProvider } from "@/context/TaskContext";
+import { TreeProvider } from "@/context/TreeContext";
 
 function App() {
   return (
@@ -23,7 +27,11 @@ function App() {
             path="/app"
             element={
               <ProtectedRoute>
-                <Layout />
+                <TreeProvider>
+                  <TaskProvider>
+                    <Layout />
+                  </TaskProvider>
+                </TreeProvider>
               </ProtectedRoute>
             }
           >
@@ -31,6 +39,7 @@ function App() {
             <Route path="tasks" element={<TasksPage />} />
             <Route path="projects" element={<ProjectsPage />} />
             <Route path="community" element={<CommunityPage />} />
+            <Route path="tree" element={<TreePage />} />
           </Route>
 
           {/* Catch all */}
