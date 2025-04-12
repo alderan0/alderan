@@ -1,3 +1,4 @@
+
 import { useTasks } from "@/context/TaskContext";
 import { useTree } from "@/context/TreeContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -140,7 +141,8 @@ export const ToolsInventory = () => {
                     {tool.effect?.health && (
                       <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">+{tool.effect.health} Health</span>
                     )}
-                    {tool.effect?.beauty && (
+                    {/* Properly check for beauty property */}
+                    {tool.effect && 'beauty' in tool.effect && (
                       <span className="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full">+{tool.effect.beauty} Beauty</span>
                     )}
                     {tool.effect?.style && (

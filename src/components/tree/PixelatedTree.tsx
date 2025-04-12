@@ -5,9 +5,8 @@ import { Sparkle, Leaf, Flame } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const PixelatedTree = () => {
-  const { tree } = useTree();
+  const { tree, lastEffect, setLastEffect } = useTree();
   const [animation, setAnimation] = useState<string | null>(null);
-  const [lastEffect, setLastEffect] = useState<string | null>(null);
 
   // Get visual effects from the tree
   const { leafColor, trunkColor, special } = tree.visualEffects || { 
@@ -15,7 +14,7 @@ export const PixelatedTree = () => {
     trunkColor: 'brown'
   };
 
-  // Watch for changes in tree height or leaves to trigger animations
+  // Watch for changes in lastEffect to trigger animations
   useEffect(() => {
     const handleTreeChange = () => {
       if (lastEffect === 'growTaller') {
@@ -46,7 +45,7 @@ export const PixelatedTree = () => {
     if (lastEffect) {
       handleTreeChange();
     }
-  }, [lastEffect]);
+  }, [lastEffect, setLastEffect]);
 
   // Calculate tree size based on height
   const treeHeight = Math.min(400, Math.max(50, tree.height * 50));

@@ -49,6 +49,11 @@ interface TreeContextType {
   completeTask: () => void;
   activeTools: Tool[];
   availableTools: Tool[];
+  getTreeTier: () => "sapling" | "young" | "mature"; // Add this function type
+  setLastEffect: (effect: string | null) => void;
+  lastEffect: string | null;
+  treeHistory: TreeState[];
+  galleryIndex: number;
 }
 
 // Create context
@@ -163,6 +168,13 @@ export const TreeProvider: React.FC<TreeContextProps> = ({ children }) => {
     ];
   });
 
+  // Add state for tracking visual effects
+  const [lastEffect, setLastEffect] = useState<string | null>(null);
+  
+  // Add state for tree history and gallery viewing
+  const [treeHistory, setTreeHistory] = useState<TreeState[]>([]);
+  const [galleryIndex, setGalleryIndex] = useState<number>(-1);
+
   // Save to localStorage whenever state changes
   useEffect(() => {
     localStorage.setItem('tree', JSON.stringify(tree));
@@ -190,6 +202,13 @@ export const TreeProvider: React.FC<TreeContextProps> = ({ children }) => {
       }));
     }
   }, [tree.level]);
+
+  // Get tree tier based on tasks completed
+  const getTreeTier = (): "sapling" | "young" | "mature" => {
+    if (tree.tasksCompleted >= 150) return "mature";
+    if (tree.tasksCompleted >= 50) return "young";
+    return "sapling";
+  };
 
   // Apply a tool to the tree
   const applyTool = (toolId: string) => {
@@ -245,8 +264,16 @@ export const TreeProvider: React.FC<TreeContextProps> = ({ children }) => {
         updatedTree.visualEffects = updatedVisualEffects;
       }
       
+      // Set last effect for animations
+      if (tool.effect.visualEffect) {
+        setLastEffect(tool.effect.visualEffect);
+      }
+      
       setTree(updatedTree);
       toast.success(toastMessage);
+      
+      // Add to tree history for gallery view
+      setTreeHistory(prev => [...prev, updatedTree]);
     }
   };
 
@@ -304,7 +331,12 @@ export const TreeProvider: React.FC<TreeContextProps> = ({ children }) => {
       addPoints, 
       completeTask,
       activeTools,
-      availableTools
+      availableTools,
+      getTreeTier,
+      lastEffect,
+      setLastEffect,
+      treeHistory,
+      galleryIndex
     }}>
       {children}
     </TreeContext.Provider>
