@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTasks, Task } from "@/context/TaskContext";
 import { TaskDeleteDialog } from "./TaskDeleteDialog";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow } from "@/lib/utils";
 import {
   Card,
   CardContent,
@@ -209,8 +209,8 @@ export const TaskList = () => {
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg font-medium">{task.name}</CardTitle>
                     <div 
-                      className={`h-3 w-3 rounded-full ${getPriorityColor(task.priority)}`} 
-                      title={`Priority: ${Math.round(task.priority)}/100`}
+                      className={`h-3 w-3 rounded-full ${getPriorityColor(Number(task.priority))}`} 
+                      title={`Priority: ${Math.round(Number(task.priority))}/100`}
                     />
                   </div>
                 </CardHeader>

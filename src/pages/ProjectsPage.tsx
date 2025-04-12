@@ -3,7 +3,7 @@ import { useTasks } from "@/context/TaskContext";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PlusCircle, Calendar, CheckCircle, Trash2 } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow } from "@/lib/utils";
 import { AddProjectDialog } from "@/components/projects/AddProjectDialog";
 import { ProjectDetail } from "@/components/projects/ProjectDetail";
 import { useIsMobile } from "@/hooks/use-mobile";
