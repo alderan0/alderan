@@ -879,3 +879,378 @@ export const TaskProvider = ({ children }: { children: ReactNode }) => {
     
     if (preferredTaskType) {
       habitDescription += `. You're particularly good at ${preferredTaskType} tasks`;
+    }
+    
+    // Now create and return a new habit based on our analysis
+    const newHabit: Habit = {
+      id: Date.now().toString(),
+      name: habitName,
+      frequency: "daily",
+      streak: 0,
+      lastCompleted: new Date(),
+      preferredMood
+    };
+    
+    // Only add the habit if we don't already have one with a similar name
+    const existingSimilarHabit = habits.find(h => 
+      h.name.toLowerCase().includes(mostProductiveTime.toLowerCase()) && 
+      (!preferredMood || h.name.toLowerCase().includes(preferredMood.toLowerCase()))
+    );
+    
+    if (!existingSimilarHabit) {
+      setHabits(prev => [...prev, newHabit]);
+      toast.success(`New habit detected: "${habitName}"`);
+    }
+  };
+
+  const getAIScheduleSuggestions = () => {
+    const incompleteTasks = tasks.filter(task => !task.completed);
+    const today = new Date();
+    const oneWeek = new Date(today);
+    oneWeek.setDate(oneWeek.getDate() + 7);
+    const oneMonth = new Date(today);
+    oneMonth.setDate(oneMonth.getDate() + 30);
+    
+    // Convert task.deadline back to Date object if it's a string
+    const tasksWithProperDates = incompleteTasks.map(task => ({
+      ...task,
+      deadline: task.deadline instanceof Date ? task.deadline : new Date(task.deadline)
+    }));
+    
+    // Daily tasks - due today or tomorrow, sorted by priority
+    const dailyTasks = tasksWithProperDates
+      .filter(task => {
+        const taskDate = new Date(task.deadline);
+        const taskDay = new Date(taskDate.getFullYear(), taskDate.getMonth(), taskDate.getDate());
+        const todayDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        const tomorrowDay = new Date(todayDay);
+        tomorrowDay.setDate(tomorrowDay.getDate() + 1);
+        
+        return (
+          taskDay.getTime() === todayDay.getTime() || 
+          taskDay.getTime() === tomorrowDay.getTime()
+        );
+      })
+      .sort((a, b) => {
+        // First by date
+        const dateA = new Date(a.deadline).getTime();
+        const dateB = new Date(b.deadline).getTime();
+        if (dateA !== dateB) return dateA - dateB;
+        
+        // Then by priority
+        if (a.priority !== b.priority) {
+          if (a.priority === 'high') return -1;
+          if (b.priority === 'high') return 1;
+          if (a.priority === 'medium') return -1;
+          return 1;
+        }
+        
+        // Then by mood match
+        const aMoodMatch = a.mood === currentMood;
+        const bMoodMatch = b.mood === currentMood;
+        if (aMoodMatch && !bMoodMatch) return -1;
+        if (!aMoodMatch && bMoodMatch) return 1;
+        
+        return 0;
+      });
+    
+    // Weekly tasks - due this week, not including daily tasks
+    const weeklyTasks = tasksWithProperDates
+      .filter(task => {
+        const taskDate = new Date(task.deadline);
+        return (
+          taskDate > today &&
+          taskDate <= oneWeek &&
+          !dailyTasks.some(dt => dt.id === task.id)
+        );
+      })
+      .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime());
+    
+    // Monthly tasks - due this month, not including weekly or daily tasks
+    const monthlyTasks = tasksWithProperDates
+      .filter(task => {
+        const taskDate = new Date(task.deadline);
+        return (
+          taskDate > oneWeek &&
+          taskDate <= oneMonth
+        );
+      })
+      .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime());
+    
+    // Generate natural language suggestions
+    const dailySuggestions = dailyTasks.map(task => {
+      const taskDate = new Date(task.deadline);
+      const isToday = taskDate.getDate() === today.getDate() && 
+                     taskDate.getMonth() === today.getMonth() && 
+                     taskDate.getFullYear() === today.getFullYear();
+      
+      let timeStr = "";
+      if (task.deadline instanceof Date && task.deadline.getHours() !== 0) {
+        timeStr = ` by ${task.deadline.getHours()}:${task.deadline.getMinutes().toString().padStart(2, '0')}`;
+      }
+      
+      return `${task.priority === 'high' ? "Priority: " : ""}${task.name} (${isToday ? `today${timeStr}` : "tomorrow"})`;
+    });
+    
+    const weeklySuggestions = weeklyTasks.map(task => {
+      const taskDate = new Date(task.deadline);
+      const daysUntil = Math.ceil((taskDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+      const dayName = dayNames[taskDate.getDay()];
+      
+      return `${task.name} (${dayName}, ${daysUntil} days from now)`;
+    });
+    
+    const monthlySuggestions = monthlyTasks.map(task => {
+      const taskDate = new Date(task.deadline);
+      const daysUntil = Math.ceil((taskDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      
+      return `${task.name} (in ${daysUntil} days)`;
+    });
+    
+    return {
+      daily: dailySuggestions,
+      weekly: weeklySuggestions,
+      monthly: monthlySuggestions
+    };
+  };
+  
+  const getMoodBasedSuggestions = (): Task[] => {
+    const incompleteTasks = tasks.filter(task => !task.completed);
+    
+    // First, get tasks that match the current mood
+    const moodMatchingTasks = incompleteTasks.filter(task => 
+      task.mood && task.mood === currentMood
+    );
+    
+    // If we have enough mood-matching tasks, return those
+    if (moodMatchingTasks.length >= 3) {
+      return moodMatchingTasks.slice(0, 3);
+    }
+    
+    // Otherwise, fill in with high priority tasks
+    const highPriorityTasks = incompleteTasks
+      .filter(task => task.priority === 'high' && (!task.mood || task.mood !== currentMood))
+      .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime());
+    
+    const result = [...moodMatchingTasks];
+    
+    // Add high priority tasks until we have 3 or run out
+    for (let i = 0; i < highPriorityTasks.length && result.length < 3; i++) {
+      result.push(highPriorityTasks[i]);
+    }
+    
+    // If we still need more, add medium priority tasks
+    if (result.length < 3) {
+      const mediumPriorityTasks = incompleteTasks
+        .filter(task => 
+          task.priority === 'medium' && 
+          (!task.mood || task.mood !== currentMood) &&
+          !result.some(t => t.id === task.id)
+        )
+        .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime());
+      
+      for (let i = 0; i < mediumPriorityTasks.length && result.length < 3; i++) {
+        result.push(mediumPriorityTasks[i]);
+      }
+    }
+    
+    return result;
+  };
+
+  const getTaskStats = (): TaskStats => {
+    const completedTasks = tasks.filter(task => task.completed);
+    const totalCompletionTime = completedTasks.reduce((sum, task) => sum + (task.actualTime || 0), 0);
+    const averageCompletionTime = completedTasks.length > 0 ? totalCompletionTime / completedTasks.length : 0;
+    
+    return {
+      completionRate: tasks.length > 0 ? completedTasks.length / tasks.length : 0,
+      averageCompletionTime,
+      productivityScore: calculateProductivityScore(),
+      highPriorityTasks: tasks.filter(task => !task.completed && task.priority === 'high').length
+    };
+  };
+  
+  const addProject = (project: Omit<Project, "id" | "completed" | "completedAt" | "createdAt">) => {
+    const newProject: Project = {
+      ...project,
+      id: uuidv4(),
+      completed: false,
+      completedAt: undefined,
+      createdAt: new Date()
+    };
+    
+    setProjects(prev => [...prev, newProject]);
+    toast.success("Project created!");
+  };
+  
+  const completeProject = (id: string) => {
+    setProjects(prev => prev.map(project => 
+      project.id === id ? { ...project, completed: true, completedAt: new Date() } : project
+    ));
+    
+    // Complete all tasks associated with this project
+    setTasks(prev => prev.map(task => 
+      task.projectId === id ? { ...task, completed: true, completedAt: new Date() } : task
+    ));
+    
+    toast.success("Project marked as complete!");
+  };
+  
+  const deleteProject = (id: string) => {
+    // Ask if user wants to delete associated tasks or reassign them
+    const projectTasks = tasks.filter(task => task.projectId === id);
+    
+    if (projectTasks.length > 0) {
+      // For now, just remove the project ID from these tasks
+      setTasks(prev => prev.map(task => 
+        task.projectId === id ? { ...task, projectId: undefined } : task
+      ));
+    }
+    
+    setProjects(prev => prev.filter(project => project.id !== id));
+    toast.info("Project deleted");
+  };
+  
+  const addSubtask = (taskId: string, subtaskName: string) => {
+    const newSubtask: Subtask = {
+      id: uuidv4(),
+      name: subtaskName,
+      completed: false
+    };
+    
+    setTasks(prev => prev.map(task => 
+      task.id === taskId 
+        ? { ...task, subtasks: [...task.subtasks, newSubtask] } 
+        : task
+    ));
+    
+    toast.success("Subtask added");
+  };
+  
+  const completeSubtask = (taskId: string, subtaskId: string) => {
+    setTasks(prev => prev.map(task => 
+      task.id === taskId 
+        ? { 
+            ...task, 
+            subtasks: task.subtasks.map(subtask => 
+              subtask.id === subtaskId 
+                ? { ...subtask, completed: true, completedAt: new Date() } 
+                : subtask
+            ) 
+          } 
+        : task
+    ));
+  };
+  
+  const deleteSubtask = (taskId: string, subtaskId: string) => {
+    setTasks(prev => prev.map(task => 
+      task.id === taskId 
+        ? { 
+            ...task, 
+            subtasks: task.subtasks.filter(subtask => subtask.id !== subtaskId)
+          } 
+        : task
+    ));
+  };
+  
+  const getProjectResources = (projectId: string): ProjectResource[] => {
+    const project = projects.find(p => p.id === projectId);
+    if (!project) return [];
+    
+    const projectTasks = tasks.filter(task => task.projectId === projectId);
+    const taskNames = projectTasks.map(task => task.name);
+    
+    return suggestResources(project.name, taskNames);
+  };
+  
+  const setTaskDifficulty = (taskId: string, rating: "easy" | "medium" | "hard") => {
+    setTasks(prev => prev.map(task => 
+      task.id === taskId 
+        ? { 
+            ...task, 
+            difficulty: calculateTaskDifficulty(task.name || "", task.notes || "", task.estimatedTime || 0, rating)
+          } 
+        : task
+    ));
+    toast.success("Task difficulty updated");
+  };
+  
+  const deleteCompletedTasks = (useForTraining: boolean) => {
+    const completedTasks = tasks.filter(task => task.completed);
+    
+    if (useForTraining && aiTrainingEnabled) {
+      completedTasks.forEach(task => {
+        console.log(`Training data from completed task: ${task.name}`, {
+          completedAt: task.completedAt,
+          mood: task.mood,
+          actualTime: task.actualTime,
+          difficulty: task.difficulty
+        });
+      });
+    }
+    
+    setTasks(prev => prev.filter(task => !task.completed));
+    toast.info(`Deleted ${completedTasks.length} completed tasks`);
+  };
+  
+  const updateAITrainingPreference = (enabled: boolean) => {
+    setAITrainingEnabled(enabled);
+    localStorage.setItem('aiTrainingEnabled', JSON.stringify(enabled));
+    
+    if (enabled) {
+      toast.success("AI training enabled - your task data will help improve suggestions");
+    } else {
+      toast.info("AI training disabled - your task data will not be used for training");
+    }
+  };
+  
+  const updateTaskPriority = (taskId: string, priority: "low" | "medium" | "high") => {
+    setTasks(prev => prev.map(task => 
+      task.id === taskId ? { ...task, priority } : task
+    ));
+  };
+  
+  return (
+    <TaskContext.Provider value={{
+      tasks,
+      addTask,
+      completeTask,
+      deleteTask,
+      prioritizeTasks,
+      suggestedTasks,
+      tools,
+      habits,
+      currentMood,
+      setCurrentMood,
+      suggestHabit,
+      projects,
+      addProject,
+      completeProject,
+      deleteProject,
+      addSubtask,
+      completeSubtask,
+      deleteSubtask,
+      getProjectResources,
+      setTaskDifficulty,
+      deleteCompletedTasks,
+      updateAITrainingPreference,
+      getAIScheduleSuggestions,
+      getMoodBasedSuggestions,
+      getTaskStats,
+      aiTrainingEnabled,
+      updateTaskPriority,
+      calculateProductivityScore
+    }}>
+      {children}
+    </TaskContext.Provider>
+  );
+};
+
+export const useTasks = (): TaskContextType => {
+  const context = useContext(TaskContext);
+  if (context === undefined) {
+    throw new Error('useTasks must be used within a TaskProvider');
+  }
+  return context;
+};
