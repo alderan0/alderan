@@ -1,112 +1,109 @@
 
-import { useTasks } from "@/context/TaskContext";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Repeat, Check, Zap, Clock } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { motion } from "framer-motion";
-import { format } from "date-fns";
+import React from 'react';
+import { useTasks } from '@/context/TaskContext';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { CheckCircle, CircleSlash, Coffee, Target, Sparkles, Brain, Zap, Moon } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export const HabitTracker = () => {
-  const { habits } = useTasks();
+  const { habits, currentMood } = useTasks();
   
-  if (habits.length === 0) {
-    return null;
+  // Sort habits by streak (descending)
+  const sortedHabits = [...(habits || [])].sort((a, b) => (b.streak || 0) - (a.streak || 0));
+  
+  // Take top 3 habits by streak
+  const topHabits = sortedHabits.slice(0, 3);
+  
+  const getMoodEmoji = (mood?: string) => {
+    switch (mood) {
+      case 'Creative': return <Sparkles className="h-4 w-4 text-purple-500" />;
+      case 'Focused': return <Brain className="h-4 w-4 text-blue-500" />;
+      case 'Relaxed': return <Coffee className="h-4 w-4 text-green-500" />;
+      case 'Energetic': return <Zap className="h-4 w-4 text-amber-500" />;
+      case 'Tired': return <Moon className="h-4 w-4 text-slate-500" />;
+      default: return null;
+    }
+  };
+  
+  const getStrengthLabel = (streak: number) => {
+    if (streak >= 20) return 'Expert';
+    if (streak >= 10) return 'Strong';
+    if (streak >= 5) return 'Building';
+    if (streak >= 1) return 'Started';
+    return 'New';
+  };
+  
+  const getProgressValue = (streak: number) => {
+    return Math.min(100, streak * 5);
+  };
+  
+  if (!habits || habits.length === 0) {
+    return (
+      <Card className="border-dashed bg-muted/50">
+        <CardContent className="pt-6 text-center text-muted-foreground">
+          <div className="flex flex-col items-center gap-2">
+            <Target className="h-6 w-6" />
+            <p>Complete tasks to identify habits</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
   
-  const container = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
-  };
-  
-  const item = {
-    hidden: { opacity: 0, x: -20 },
-    show: { opacity: 1, x: 0 }
-  };
-  
-  // Helper to get time of day in human-readable form
-  const formatTimeOfDay = (timeOfDay: string | undefined) => {
-    switch (timeOfDay) {
-      case "morning": return "Morning (5am-12pm)";
-      case "afternoon": return "Afternoon (12pm-5pm)";
-      case "evening": return "Evening (5pm-10pm)";
-      case "night": return "Night (10pm-5am)";
-      default: return "Any time";
-    }
-  };
-  
   return (
-    <Card className="mb-6">
-      <CardHeader className="pb-2">
-        <CardTitle className="flex items-center text-lg">
-          <Repeat className="h-5 w-5 mr-2 text-alderan-blue" />
-          AI-Detected Habits
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p className="text-sm text-muted-foreground mb-4">
-          Based on your task completion patterns, we've identified these productive habits:
-        </p>
-        
-        <motion.div 
-          className="space-y-3"
-          variants={container}
-          initial="hidden"
-          animate="show"
-        >
-          {habits.map((habit) => (
-            <motion.div 
-              key={habit.id} 
-              className="p-3 bg-muted rounded-lg flex justify-between items-center"
-              variants={item}
+    <div className="space-y-4">
+      <div className="text-sm font-medium">Productivity Habits</div>
+      
+      <div className="space-y-3">
+        {topHabits.map(habit => {
+          const isActive = habit.preferredMood === currentMood;
+          const streak = habit.streak || 0;
+          const strengthLabel = getStrengthLabel(streak);
+          
+          return (
+            <Card 
+              key={habit.id}
+              className={cn(
+                "border overflow-hidden transition-colors",
+                isActive ? "border-primary bg-primary/5" : undefined
+              )}
             >
-              <div>
-                <div className="flex items-center">
-                  <h3 className="font-medium">{habit.name}</h3>
-                  {habit.streak >= 3 && (
-                    <Badge className="ml-2 bg-gradient-to-r from-amber-500 to-orange-500">
-                      {habit.streak}x Streak
-                    </Badge>
-                  )}
-                </div>
-                
-                <div className="flex items-center text-xs text-muted-foreground mt-1 space-x-4">
-                  <div className="flex items-center">
-                    <Clock className="h-3 w-3 mr-1" />
-                    <span>{formatTimeOfDay(habit.preferredTimeOfDay)}</span>
+              <CardContent className="p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    {isActive ? (
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <CircleSlash className="h-4 w-4 text-muted-foreground" />
+                    )}
+                    <div className="text-sm font-medium truncate max-w-[120px]">
+                      {habit.name}
+                    </div>
                   </div>
                   
-                  {habit.preferredMood && (
-                    <div className="flex items-center">
-                      <Zap className="h-3 w-3 mr-1" />
-                      <span>{habit.preferredMood} mood</span>
-                    </div>
-                  )}
-                  
-                  {habit.lastCompleted && (
-                    <div className="flex items-center">
-                      <Check className="h-3 w-3 mr-1 text-green-500" />
-                      <span className="text-green-600">
-                        Last: {format(new Date(habit.lastCompleted), "MMM d")}
-                      </span>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-1">
+                    {habit.preferredMood && getMoodEmoji(habit.preferredMood)}
+                    <span className="text-xs font-medium">
+                      {streak} day{streak !== 1 ? 's' : ''}
+                    </span>
+                  </div>
                 </div>
-              </div>
-              
-              <Button variant="ghost" size="sm" className="h-8">
-                <Zap className="h-4 w-4 mr-1" />
-                <span className="sr-only sm:not-sr-only">Use Energy</span>
-              </Button>
-            </motion.div>
-          ))}
-        </motion.div>
-      </CardContent>
-    </Card>
+                
+                <div className="mt-2 space-y-1">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-muted-foreground">{strengthLabel}</span>
+                    <span className="font-medium">{getProgressValue(streak)}%</span>
+                  </div>
+                  <Progress value={getProgressValue(streak)} className="h-1" />
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+    </div>
   );
 };
+
+export default HabitTracker;

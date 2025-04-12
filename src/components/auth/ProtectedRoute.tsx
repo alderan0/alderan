@@ -1,22 +1,28 @@
-import { Navigate, useLocation } from "react-router-dom";
-import { useAuth } from "@/context/AuthContext";
 
-export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading } = useAuth();
-  const location = useLocation();
+import { ReactNode } from 'react';
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
 
-  if (loading) {
+interface ProtectedRouteProps {
+  children: ReactNode;
+}
+
+export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-primary"></div>
       </div>
     );
   }
 
-  if (!user) {
-    // Save the attempted URL for redirecting after login
-    return <Navigate to="/auth" state={{ from: location }} replace />;
+  if (!isAuthenticated) {
+    return <Navigate to="/auth" replace />;
   }
 
   return <>{children}</>;
-}; 
+};
+
+export default ProtectedRoute;

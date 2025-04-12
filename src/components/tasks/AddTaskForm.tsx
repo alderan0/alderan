@@ -21,7 +21,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Mic, MicOff, Plus, Sparkles, Brain, Coffee, Zap, Moon, FolderKanban, Loader2, CheckCircle, CirclePlus, CircleDashed } from "lucide-react";
+import { Mic, MicOff, Plus, Sparkles, Brain, Coffee, Zap, Moon, FolderKanban, Loader2, CheckCircle, CirclePlus, CircleDashed, Calendar as CalendarIcon, Clock, Star } from "lucide-react";
 import { toast } from "sonner";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent } from "@/components/ui/card";
@@ -29,11 +29,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
-import { Calendar as CalendarIcon, Clock, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MoodSelector } from "./MoodSelector";
-import { TimePickerDemo } from "../ui/time-picker";
-import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
 
 const DIFFICULTY_LEVELS = ["Easy", "Medium", "Hard", "Very Hard"] as const;
 const TASK_TYPES = ["Task", "Subtask", "Project"] as const;
@@ -69,8 +66,7 @@ export const AddTaskForm = () => {
     deadline: null as Date | null,
     deadlineTime: "",
     estimatedTime: "",
-    userRating: 3,
-    mood: "Neutral",
+    mood: "Neutral" as "Creative" | "Focused" | "Relaxed" | "Energetic" | "Tired" | "Neutral",
   });
   
   useEffect(() => {
@@ -101,34 +97,33 @@ export const AddTaskForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const taskData = {
-      ...formData,
-      createdAt: new Date(),
-      completed: false,
-    };
-
-    switch (taskType) {
-      case "Task":
-        await addTask(taskData);
-        break;
-      case "Subtask":
-        await addSubtask(taskData);
-        break;
-      case "Project":
-        await addProject(taskData);
-        break;
+    if (formType === "task") {
+      const estimatedTime = parseInt(estimatedHours || "0") * 60 + parseInt(estimatedMinutes || "0");
+      const deadline = new Date(deadlineDate);
+      
+      if (deadlineTime) {
+        const [hours, minutes] = deadlineTime.split(':').map(Number);
+        deadline.setHours(hours, minutes);
+      }
+      
+      await addTask({
+        name: taskName,
+        deadline: deadline,
+        estimatedTime: estimatedTime,
+        mood: taskMood as "Creative" | "Focused" | "Relaxed" | "Energetic" | "Tired"
+      });
+      
+    } else if (formType === "subtask") {
+      await addSubtask(selectedTaskId, subtaskName);
+      
+    } else if (formType === "project") {
+      await addProject({
+        name: projectName, 
+        description: projectDescription,
+        deadline: projectDeadline ? new Date(projectDeadline) : undefined
+      });
     }
-
-    setFormData({
-      name: "",
-      description: "",
-      difficulty: "Medium",
-      deadline: null,
-      deadlineTime: "",
-      estimatedTime: "",
-      userRating: 3,
-      mood: "Neutral",
-    });
+    
     setIsOpen(false);
   };
   

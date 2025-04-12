@@ -21,6 +21,8 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   signup: (username: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  signIn: (email: string, password: string) => Promise<void>; // Adding to match usage in AuthPage
+  signUp: (email: string, password: string) => Promise<void>; // Adding to match usage in AuthPage
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -181,6 +183,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Alias methods to match what's used in AuthPage.tsx
+  const signIn = login;
+  const signUp = (email: string, password: string) => signup('', email, password);
+
   return (
     <AuthContext.Provider
       value={{
@@ -190,7 +196,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         isLoading,
         login,
         signup,
-        logout
+        logout,
+        signIn,
+        signUp
       }}
     >
       {children}

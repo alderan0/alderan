@@ -1201,9 +1201,9 @@ export const TaskProvider = ({ children }: { children: ReactNode }) => {
     const totalCompletionTime = completedTasks.reduce((sum, task) => {
       if (task.completedAt && task.createdAt) {
         const timeDiff = task.completedAt.getTime() - task.createdAt.getTime();
-        return Number(sum) + Number(timeDiff);
+        return sum + timeDiff;
       }
-      return Number(sum);
+      return sum;
     }, 0);
     
     const averageCompletionTime = completedCount > 0 
@@ -1213,9 +1213,9 @@ export const TaskProvider = ({ children }: { children: ReactNode }) => {
     const highPriorityTasks = tasks.filter(task => task.priority === 'high').length;
     
     const productivityScore = Math.min(100, Math.floor(
-      Number(completionRate) * 0.4 + 
-      Number(highPriorityTasks) * 10 + 
-      Number(completedCount) * 5
+      completionRate * 0.4 + 
+      highPriorityTasks * 10 + 
+      completedCount * 5
     ));
 
     return {
