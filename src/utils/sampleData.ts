@@ -1,4 +1,3 @@
-
 import { Task, Project, Tool } from "@/context/TaskContext";
 import { v4 as uuidv4 } from "uuid";
 
@@ -18,8 +17,8 @@ export const generateMockProfiles = (count = 10) => {
   
   for (let i = 0; i < count; i++) {
     profiles.push({
-      id: uuidv4(),
-      name: `${names[Math.floor(Math.random() * names.length)]} ${String.fromCharCode(65 + Math.floor(Math.random() * 26)}.`,
+      id: uuidv4(), // Add comma here
+      name: `${names[Math.floor(Math.random() * names.length)]} ${String.fromCharCode(65 + Math.floor(Math.random() * 26))}.`, // Add comma
       skillLevel: skillLevels[Math.floor(Math.random() * skillLevels.length)],
       points: Math.floor(Math.random() * 5000),
       tasksCompleted: Math.floor(Math.random() * 100),
