@@ -7,10 +7,11 @@ import { Button } from "@/components/ui/button";
 import { 
   Droplet, 
   Leaf, 
-  Heart, 
+  Heart,
   Sparkles,
   Award,
-  Gift
+  Gift,
+  Ruler
 } from "lucide-react";
 import { 
   ContextMenu,
@@ -56,8 +57,8 @@ export const PixelatedTree = () => {
   // Function to get tailwind class for the tree based on its size
   const getTreeSizeClass = () => {
     if (!tree) return "h-24";
-    if (tree.height < 30) return "h-24";
-    if (tree.height < 60) return "h-32";
+    if (tree.height < 2) return "h-24";
+    if (tree.height < 5) return "h-32";
     return "h-40";
   };
   
@@ -69,6 +70,11 @@ export const PixelatedTree = () => {
     
     const baseClasses = "mx-auto transition-all duration-500";
     let styleClasses = "";
+    
+    // Rainbow leaves effect
+    if (tree.styles.special.includes('rainbow')) {
+      return `${baseClasses} bg-gradient-to-tr from-red-500 via-yellow-400 via-green-500 via-blue-500 to-purple-600 shadow-xl shadow-rainbow/20`;
+    }
     
     // Leaf style
     switch(tree.styles.leafStyle) {
@@ -116,19 +122,33 @@ export const PixelatedTree = () => {
     const hasSpecialFunctions = tree?.styles?.special?.includes('functions') || false;
     const hasSpecialBirds = tree?.styles?.special?.includes('birds') || false;
     const hasSpecialRecursive = tree?.styles?.special?.includes('recursive') || false;
+    const hasRainbowLeaves = tree?.styles?.special?.includes('rainbow') || false;
     const decorationsCount = tree?.decorations?.length || 0;
+    
+    // Determine trunk height based on tree height in meters
+    const trunkHeight = tree?.height ? `${Math.min(36, 16 + tree.height * 5)}px` : '16px';
+    
+    // Determine foliage size based on tree height and leaves
+    const foliageSize = tree?.height ? 
+      { width: `${Math.min(160, 80 + tree.height * 10)}px`, height: `${Math.min(200, 80 + tree.height * 15)}px` } : 
+      { width: '80px', height: '80px' };
     
     return (
       <div className="flex flex-col items-center justify-end h-60 relative">
         {/* Tree trunk */}
-        <div className={`w-6 ${tree?.height < 50 ? 'h-16' : 'h-24'} bg-amber-800 rounded-sm`}></div>
+        <div className={`w-6 bg-amber-800 rounded-sm`} style={{ height: trunkHeight }}></div>
         
         {/* Tree leaves - pixelated style */}
         <div className="absolute bottom-16 flex flex-col items-center">
           {/* Base large leaf area */}
-          <div className={`w-32 ${getTreeSizeClass()} ${getTreeAppearanceClasses()} rounded-lg`} 
-            style={{ clipPath: "polygon(50% 0%, 100% 70%, 80% 100%, 20% 100%, 0% 70%)" }}>
-            
+          <div 
+            className={`${getTreeAppearanceClasses()} rounded-lg`} 
+            style={{ 
+              clipPath: "polygon(50% 0%, 100% 70%, 80% 100%, 20% 100%, 0% 70%)",
+              width: foliageSize.width,
+              height: foliageSize.height
+            }}
+          >
             {/* Pixelated overlay pattern */}
             <div className="w-full h-full grid grid-cols-8 grid-rows-8 opacity-30">
               {Array.from({ length: 64 }).map((_, i) => (
@@ -139,6 +159,27 @@ export const PixelatedTree = () => {
               ))}
             </div>
           </div>
+          
+          {/* Rainbow leaves effect */}
+          {hasRainbowLeaves && (
+            <div className="absolute inset-0 pointer-events-none">
+              <div className="animate-pulse-slow opacity-70">
+                {Array.from({ length: 20 }).map((_, i) => (
+                  <div 
+                    key={i}
+                    className="absolute rounded-full mix-blend-overlay"
+                    style={{
+                      width: `${Math.random() * 10 + 5}px`,
+                      height: `${Math.random() * 10 + 5}px`,
+                      top: `${Math.random() * 80}%`,
+                      left: `${Math.random() * 80 + 10}%`,
+                      background: ['#ff0000', '#ff7700', '#ffff00', '#00ff00', '#0000ff', '#8a2be2'][Math.floor(Math.random() * 6)]
+                    }}
+                  ></div>
+                ))}
+              </div>
+            </div>
+          )}
           
           {/* Decorations based on special styles */}
           {hasSpecialBirds && (
@@ -214,11 +255,11 @@ export const PixelatedTree = () => {
             <CardContent className="p-6 bg-gradient-to-b from-blue-50 to-white">
               {renderPixelatedTree()}
               
-              <div className="mt-4 grid grid-cols-4 gap-2">
+              <div className="mt-4 grid grid-cols-3 gap-2">
                 <div className="flex flex-col items-center">
-                  <Droplet className="h-5 w-5 text-blue-500 mb-1" />
+                  <Ruler className="h-5 w-5 text-amber-500 mb-1" />
                   <div className="text-xs text-center">Height</div>
-                  <div className="font-medium">{tree?.height || 0}%</div>
+                  <div className="font-medium">{tree?.height || 0}m</div>
                 </div>
                 <div className="flex flex-col items-center">
                   <Leaf className="h-5 w-5 text-green-500 mb-1" />
@@ -229,11 +270,6 @@ export const PixelatedTree = () => {
                   <Heart className="h-5 w-5 text-red-500 mb-1" />
                   <div className="text-xs text-center">Health</div>
                   <div className="font-medium">{tree?.health || 0}%</div>
-                </div>
-                <div className="flex flex-col items-center">
-                  <Sparkles className="h-5 w-5 text-amber-500 mb-1" />
-                  <div className="text-xs text-center">Beauty</div>
-                  <div className="font-medium">{tree?.beauty || 0}%</div>
                 </div>
               </div>
             </CardContent>

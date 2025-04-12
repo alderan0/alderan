@@ -2,7 +2,7 @@
 import { PixelatedTree } from "@/components/tree/PixelatedTree";
 import { ToolsInventory } from "@/components/tree/ToolsInventory";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { TreeDeciduous, Award, Star, TrendingUp, Zap } from "lucide-react";
+import { TreeDeciduous, Award, Star, TrendingUp, Zap, Ruler } from "lucide-react";
 import { useTree } from "@/context/TreeContext";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -66,7 +66,7 @@ const TreePage = () => {
             <Progress value={progressPercent} className="h-2" />
           </div>
           
-          <div className={`grid ${isMobile ? 'grid-cols-2' : 'grid-cols-4'} gap-3`}>
+          <div className={`grid ${isMobile ? 'grid-cols-2' : 'grid-cols-3'} gap-3`}>
             <StatCard 
               icon={<Award className="h-4 w-4 text-amber-500" />}
               title="Points"
@@ -78,14 +78,9 @@ const TreePage = () => {
               value={tree.tasksCompleted}
             />
             <StatCard 
-              icon={<TreeDeciduous className="h-4 w-4 text-green-500" />}
+              icon={<Ruler className="h-4 w-4 text-emerald-500" />}
               title="Tree Height"
-              value={`${tree.height}%`}
-            />
-            <StatCard 
-              icon={<TreeDeciduous className="h-4 w-4 text-emerald-500" />}
-              title="Foliage"
-              value={`${tree.leaves}%`}
+              value={`${tree.height}m`}
             />
           </div>
         </CardContent>

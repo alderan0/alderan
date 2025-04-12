@@ -13,7 +13,6 @@ import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
-import { AppNav } from "@/components/layout/AppNav";
 
 const TasksPage = () => {
   const { currentMood, projects } = useTasks();
@@ -107,9 +106,6 @@ const TasksPage = () => {
           </TabsContent>
         </Tabs>
       </div>
-      
-      {/* Bottom Navigation */}
-      <AppNav />
     </div>
   );
 };

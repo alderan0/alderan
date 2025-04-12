@@ -1,7 +1,7 @@
 
 import { Outlet } from "react-router-dom";
 import { Navbar } from "./Navbar";
-import { MobileNav } from "./MobileNav";
+import { AppNav } from "./AppNav";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
@@ -20,7 +20,7 @@ export const Layout = () => {
           <Outlet />
         </div>
       </main>
-      {isMobile && <MobileNav />}
+      {isMobile && <AppNav />}
     </div>
   );
 };

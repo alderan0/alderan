@@ -1,17 +1,15 @@
-
 import { createContext, useState, useContext, useEffect, ReactNode } from "react";
 import { Tool } from "./TaskContext";
 import { toast } from "sonner";
 
 export interface TreeState {
-  height: number; // 1-100
+  height: number; // meters, from 0.1 to 10
   leaves: number; // 0-100
   health: number; // 1-100
-  beauty: number; // 1-100
-  level: number; // 1-20
   decorations: string[];
   tasksCompleted: number;
   points: number;
+  level: number; // 1-20
   levelStatus: "beginner" | "intermediate" | "advanced" | "expert";
   styles: {
     leafStyle: "default" | "syntax" | "pixel" | "binary";
@@ -24,7 +22,7 @@ export interface TreeState {
   rewards: PixelTreeReward[];
 }
 
-// New rewards system interfaces
+// Update reward interface to remove beauty and add visual effects
 export interface PixelTreeReward {
   id: string;
   name: string;
@@ -32,12 +30,12 @@ export interface PixelTreeReward {
   type: "growth" | "decoration";
   rarity: "common" | "uncommon" | "rare" | "exquisite";
   effect: {
-    height?: number;
+    height?: number; // in meters (0.1-0.5)
     leaves?: number;
     health?: number;
-    beauty?: number;
     special?: string;
     style?: string;
+    visualEffect?: string; // new property for visual changes
   };
   used: boolean;
   iconName: string;
@@ -61,14 +59,14 @@ interface TreeContextType {
 
 const TreeContext = createContext<TreeContextType | undefined>(undefined);
 
-// Growth promoter rewards database
+// Update growth promoter rewards database with meters for height and visual effects
 const growthPromoterRewards: Omit<PixelTreeReward, "id" | "used">[] = [
   {
     name: "Water Droplet",
     description: "Basic tree growth enhancer",
     type: "growth",
     rarity: "common",
-    effect: { height: 3, health: 2 },
+    effect: { height: 0.1, health: 2, visualEffect: "dripping-water" },
     iconName: "droplet"
   },
   {
@@ -76,7 +74,7 @@ const growthPromoterRewards: Omit<PixelTreeReward, "id" | "used">[] = [
     description: "Promotes leaf growth through code nutrition",
     type: "growth",
     rarity: "common",
-    effect: { leaves: 5, health: 1 },
+    effect: { leaves: 5, health: 1, visualEffect: "glowing-soil" },
     iconName: "leaf"
   },
   {
@@ -84,7 +82,7 @@ const growthPromoterRewards: Omit<PixelTreeReward, "id" | "used">[] = [
     description: "Improves tree health by removing code bugs",
     type: "growth",
     rarity: "common",
-    effect: { health: 4 },
+    effect: { health: 4, visualEffect: "bug-protection" },
     iconName: "bug"
   },
   {
@@ -92,7 +90,7 @@ const growthPromoterRewards: Omit<PixelTreeReward, "id" | "used">[] = [
     description: "Provides algorithmic sunlight to your tree",
     type: "growth",
     rarity: "common",
-    effect: { height: 2, health: 3 },
+    effect: { height: 0.1, health: 3, visualEffect: "sun-rays" },
     iconName: "sun"
   },
   {
@@ -100,7 +98,7 @@ const growthPromoterRewards: Omit<PixelTreeReward, "id" | "used">[] = [
     description: "Commits nutrients directly to the tree root",
     type: "growth",
     rarity: "common",
-    effect: { height: 4 },
+    effect: { height: 0.2, visualEffect: "root-glow" },
     iconName: "git-commit"
   },
   {
@@ -108,7 +106,7 @@ const growthPromoterRewards: Omit<PixelTreeReward, "id" | "used">[] = [
     description: "Prunes the tree to optimize growth",
     type: "growth",
     rarity: "uncommon",
-    effect: { beauty: 4, health: 3 },
+    effect: { health: 3, visualEffect: "neat-branches" },
     iconName: "scissors"
   },
   {
@@ -116,7 +114,7 @@ const growthPromoterRewards: Omit<PixelTreeReward, "id" | "used">[] = [
     description: "Accelerates growth through recursive loops",
     type: "growth",
     rarity: "uncommon",
-    effect: { height: 6, health: 2 },
+    effect: { height: 0.3, health: 2, visualEffect: "spiral-growth" },
     iconName: "repeat"
   },
   {
@@ -124,7 +122,7 @@ const growthPromoterRewards: Omit<PixelTreeReward, "id" | "used">[] = [
     description: "Merges branches to create stronger limbs",
     type: "growth",
     rarity: "uncommon",
-    effect: { height: 3, leaves: 5 },
+    effect: { height: 0.2, leaves: 5, visualEffect: "merged-branches" },
     iconName: "git-merge"
   },
   {
@@ -132,7 +130,7 @@ const growthPromoterRewards: Omit<PixelTreeReward, "id" | "used">[] = [
     description: "Special rain that nourishes the pixel tree",
     type: "growth",
     rarity: "uncommon",
-    effect: { health: 6, leaves: 4 },
+    effect: { health: 6, leaves: 4, visualEffect: "binary-rain" },
     iconName: "cloud-rain"
   },
   {
@@ -140,7 +138,7 @@ const growthPromoterRewards: Omit<PixelTreeReward, "id" | "used">[] = [
     description: "Breaks down complex bugs into nutrients",
     type: "growth",
     rarity: "uncommon",
-    effect: { health: 8 },
+    effect: { health: 8, visualEffect: "enzyme-bubbles" },
     iconName: "workflow"
   },
   {
@@ -148,7 +146,7 @@ const growthPromoterRewards: Omit<PixelTreeReward, "id" | "used">[] = [
     description: "Superposition of all essential tree nutrients",
     type: "growth",
     rarity: "rare",
-    effect: { height: 8, health: 5, leaves: 5 },
+    effect: { height: 0.4, health: 5, leaves: 5, visualEffect: "quantum-particles" },
     iconName: "atom"
   },
   {
@@ -156,7 +154,7 @@ const growthPromoterRewards: Omit<PixelTreeReward, "id" | "used">[] = [
     description: "Advanced sunlight algorithm for optimal growth",
     type: "growth",
     rarity: "rare",
-    effect: { height: 10, leaves: 8 },
+    effect: { height: 0.5, leaves: 8, visualEffect: "golden-light" },
     iconName: "sun-medium"
   },
   {
@@ -164,7 +162,7 @@ const growthPromoterRewards: Omit<PixelTreeReward, "id" | "used">[] = [
     description: "Strengthens the core foundation of your tree",
     type: "growth",
     rarity: "rare",
-    effect: { health: 12, height: 6 },
+    effect: { health: 12, height: 0.3, visualEffect: "expanding-roots" },
     iconName: "database"
   },
   {
@@ -172,7 +170,7 @@ const growthPromoterRewards: Omit<PixelTreeReward, "id" | "used">[] = [
     description: "Sweet growth improvement for elegant trees",
     type: "growth",
     rarity: "rare",
-    effect: { beauty: 10, leaves: 8 },
+    effect: { leaves: 8, visualEffect: "sugar-crystals" },
     iconName: "candy"
   },
   {
@@ -180,7 +178,7 @@ const growthPromoterRewards: Omit<PixelTreeReward, "id" | "used">[] = [
     description: "Continuous integration of growth factors",
     type: "growth",
     rarity: "rare",
-    effect: { height: 8, health: 8, leaves: 4 },
+    effect: { height: 0.4, health: 8, leaves: 4, visualEffect: "pipeline-flow" },
     iconName: "git-pull-request"
   },
   {
@@ -188,7 +186,7 @@ const growthPromoterRewards: Omit<PixelTreeReward, "id" | "used">[] = [
     description: "Legendary growth elixir made from developer frustration",
     type: "growth",
     rarity: "exquisite",
-    effect: { height: 14, health: 12, leaves: 12, beauty: 8 },
+    effect: { height: 0.5, health: 12, leaves: 12, visualEffect: "tear-sparkles" },
     iconName: "sparkles"
   },
   {
@@ -196,7 +194,7 @@ const growthPromoterRewards: Omit<PixelTreeReward, "id" | "used">[] = [
     description: "Compiles growth potential from multiple dimensions",
     type: "growth",
     rarity: "exquisite",
-    effect: { height: 15, health: 10, leaves: 10 },
+    effect: { height: 0.5, health: 10, leaves: 10, visualEffect: "quantum-compilation" },
     iconName: "cpu"
   },
   {
@@ -204,7 +202,7 @@ const growthPromoterRewards: Omit<PixelTreeReward, "id" | "used">[] = [
     description: "Original seed from the first coding tree",
     type: "growth",
     rarity: "exquisite",
-    effect: { height: 18, health: 15, beauty: 10 },
+    effect: { height: 0.5, health: 15, visualEffect: "seed-aura" },
     iconName: "award"
   },
   {
@@ -212,19 +210,19 @@ const growthPromoterRewards: Omit<PixelTreeReward, "id" | "used">[] = [
     description: "Harnesses complexity for extraordinary growth",
     type: "growth",
     rarity: "exquisite",
-    effect: { health: 20, leaves: 15 },
+    effect: { health: 20, leaves: 15, visualEffect: "complexity-web" },
     iconName: "wand"
   }
 ];
 
-// Decoration rewards database
+// Update decoration rewards with visual effects
 const decorationRewards: Omit<PixelTreeReward, "id" | "used">[] = [
   {
     name: "Bug Ornament",
     description: "Small bug decoration for your tree",
     type: "decoration",
     rarity: "common",
-    effect: { beauty: 2, special: "bugs" },
+    effect: { special: "bugs", visualEffect: "bug-ornaments" },
     iconName: "bug"
   },
   {
@@ -232,7 +230,7 @@ const decorationRewards: Omit<PixelTreeReward, "id" | "used">[] = [
     description: "Hanging comment decoration",
     type: "decoration",
     rarity: "common",
-    effect: { beauty: 2, special: "comments" },
+    effect: { special: "comments", visualEffect: "hanging-comments" },
     iconName: "message-square"
   },
   {
@@ -240,7 +238,7 @@ const decorationRewards: Omit<PixelTreeReward, "id" | "used">[] = [
     description: "String of variable names that wrap around the tree",
     type: "decoration",
     rarity: "common",
-    effect: { beauty: 3, special: "variables" },
+    effect: { special: "variables", visualEffect: "variable-strings" },
     iconName: "variable"
   },
   {
@@ -248,15 +246,23 @@ const decorationRewards: Omit<PixelTreeReward, "id" | "used">[] = [
     description: "Small curly brace-shaped lights",
     type: "decoration",
     rarity: "common",
-    effect: { beauty: 3, special: "braces" },
+    effect: { special: "braces", visualEffect: "brace-lights" },
     iconName: "braces"
+  },
+  {
+    name: "Rainbow Leaves",
+    description: "Turn your leaves into a rainbow pattern",
+    type: "decoration",
+    rarity: "uncommon",
+    effect: { special: "rainbow", visualEffect: "rainbow-foliage" },
+    iconName: "rainbow"
   },
   {
     name: "Function Bells",
     description: "Bell-shaped function decorations",
     type: "decoration",
     rarity: "common",
-    effect: { beauty: 3, special: "functions" },
+    effect: { special: "functions", visualEffect: "function-bells" },
     iconName: "bell"
   },
   {
@@ -264,7 +270,7 @@ const decorationRewards: Omit<PixelTreeReward, "id" | "used">[] = [
     description: "Garland made of array brackets",
     type: "decoration",
     rarity: "uncommon",
-    effect: { beauty: 5, special: "arrays" },
+    effect: { special: "arrays", visualEffect: "array-garland" },
     iconName: "brackets"
   },
   {
@@ -272,7 +278,7 @@ const decorationRewards: Omit<PixelTreeReward, "id" | "used">[] = [
     description: "Star-shaped decoration for the tree top",
     type: "decoration",
     rarity: "uncommon",
-    effect: { beauty: 6, special: "star" },
+    effect: { special: "star", visualEffect: "pixel-star-top" },
     iconName: "star"
   },
   {
@@ -280,7 +286,7 @@ const decorationRewards: Omit<PixelTreeReward, "id" | "used">[] = [
     description: "Circular loop decorations",
     type: "decoration",
     rarity: "uncommon",
-    effect: { beauty: 5, special: "loops" },
+    effect: { special: "loops", visualEffect: "loop-circles" },
     iconName: "repeat"
   },
   {
@@ -288,7 +294,7 @@ const decorationRewards: Omit<PixelTreeReward, "id" | "used">[] = [
     description: "Object-shaped hanging decorations",
     type: "decoration",
     rarity: "uncommon",
-    effect: { beauty: 5, special: "objects" },
+    effect: { special: "objects", visualEffect: "object-baubles" },
     iconName: "circle"
   },
   {
@@ -296,7 +302,7 @@ const decorationRewards: Omit<PixelTreeReward, "id" | "used">[] = [
     description: "Tinsel made of 0s and 1s",
     type: "decoration",
     rarity: "uncommon",
-    effect: { beauty: 6, style: "binary" },
+    effect: { style: "binary", visualEffect: "binary-tinsel" },
     iconName: "binary"
   },
   {
@@ -304,7 +310,7 @@ const decorationRewards: Omit<PixelTreeReward, "id" | "used">[] = [
     description: "Colorful lighting effect for your tree",
     type: "decoration",
     rarity: "rare",
-    effect: { beauty: 8, special: "rgb" },
+    effect: { special: "rgb", visualEffect: "rgb-glow" },
     iconName: "palette"
   },
   {
@@ -312,7 +318,7 @@ const decorationRewards: Omit<PixelTreeReward, "id" | "used">[] = [
     description: "Sorting algorithm animations on the tree",
     type: "decoration",
     rarity: "rare",
-    effect: { beauty: 9, special: "algorithm" },
+    effect: { special: "algorithm", visualEffect: "algo-animation" },
     iconName: "bar-chart"
   },
   {
@@ -320,7 +326,7 @@ const decorationRewards: Omit<PixelTreeReward, "id" | "used">[] = [
     description: "Holographic UI elements around the tree",
     type: "decoration",
     rarity: "rare",
-    effect: { beauty: 10, special: "hologram" },
+    effect: { special: "hologram", visualEffect: "holographic-ui" },
     iconName: "layers"
   },
   {
@@ -328,7 +334,7 @@ const decorationRewards: Omit<PixelTreeReward, "id" | "used">[] = [
     description: "Small bird decorations that fetch data",
     type: "decoration",
     rarity: "rare",
-    effect: { beauty: 9, special: "birds" },
+    effect: { special: "birds", visualEffect: "api-birds" },
     iconName: "bird"
   },
   {
@@ -336,7 +342,7 @@ const decorationRewards: Omit<PixelTreeReward, "id" | "used">[] = [
     description: "Unique snowflake patterns made of code",
     type: "decoration",
     rarity: "rare",
-    effect: { beauty: 8, special: "snowflakes" },
+    effect: { special: "snowflakes", visualEffect: "code-snowflakes" },
     iconName: "snowflake"
   },
   {
@@ -344,7 +350,7 @@ const decorationRewards: Omit<PixelTreeReward, "id" | "used">[] = [
     description: "Exists in multiple states simultaneously",
     type: "decoration",
     rarity: "exquisite",
-    effect: { beauty: 15, special: "quantum" },
+    effect: { special: "quantum", visualEffect: "quantum-shimmer" },
     iconName: "atom"
   },
   {
@@ -352,7 +358,7 @@ const decorationRewards: Omit<PixelTreeReward, "id" | "used">[] = [
     description: "Ancient artifact that compiles any code",
     type: "decoration",
     rarity: "exquisite",
-    effect: { beauty: 20, special: "compiler" },
+    effect: { special: "compiler", visualEffect: "compiler-glow" },
     iconName: "cpu"
   },
   {
@@ -360,7 +366,7 @@ const decorationRewards: Omit<PixelTreeReward, "id" | "used">[] = [
     description: "Self-improving decoration that learns",
     type: "decoration",
     rarity: "exquisite",
-    effect: { beauty: 18, special: "neural" },
+    effect: { special: "neural", visualEffect: "neural-connections" },
     iconName: "network"
   },
   {
@@ -368,7 +374,7 @@ const decorationRewards: Omit<PixelTreeReward, "id" | "used">[] = [
     description: "Shows glimpses of O(n) and beyond",
     type: "decoration",
     rarity: "exquisite",
-    effect: { beauty: 16, special: "portal" },
+    effect: { special: "portal", visualEffect: "complexity-portal" },
     iconName: "timer"
   },
   {
@@ -376,20 +382,19 @@ const decorationRewards: Omit<PixelTreeReward, "id" | "used">[] = [
     description: "Ancient code that still runs perfectly",
     type: "decoration",
     rarity: "exquisite",
-    effect: { beauty: 15, special: "shrine" },
+    effect: { special: "shrine", visualEffect: "legacy-shrine" },
     iconName: "landmark"
   }
 ];
 
 const initialTreeState: TreeState = {
-  height: 10,
+  height: 0.5,  // Start at 0.5 meters
   leaves: 5,
   health: 50,
-  beauty: 30,
-  level: 1,
   decorations: [],
   tasksCompleted: 0,
   points: 0,
+  level: 1,
   levelStatus: "beginner",
   styles: {
     leafStyle: "default",
@@ -476,7 +481,17 @@ export const TreeProvider = ({ children }: { children: ReactNode }) => {
     const saved = localStorage.getItem('tree');
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const savedTree = JSON.parse(saved);
+        // Convert old height % to meters if needed
+        if (savedTree.height > 10) {
+          savedTree.height = parseFloat((savedTree.height / 20).toFixed(1));
+        }
+        // Remove beauty property if it exists
+        if ('beauty' in savedTree) {
+          const { beauty, ...restTree } = savedTree;
+          return restTree;
+        }
+        return savedTree;
       } catch (e) {
         return initialTreeState;
       }
@@ -682,10 +697,9 @@ export const TreeProvider = ({ children }: { children: ReactNode }) => {
       const newTree = { ...prev };
       
       // Apply the reward effects to tree stats
-      if (reward.effect?.height) newTree.height = Math.min(100, newTree.height + reward.effect.height);
+      if (reward.effect?.height) newTree.height = parseFloat((newTree.height + reward.effect.height).toFixed(1));
       if (reward.effect?.leaves) newTree.leaves = Math.min(100, newTree.leaves + reward.effect.leaves);
       if (reward.effect?.health) newTree.health = Math.min(100, newTree.health + reward.effect.health);
-      if (reward.effect?.beauty) newTree.beauty = Math.min(100, newTree.beauty + reward.effect.beauty);
       
       // Apply special effects or styles
       if (reward.effect?.special) {
@@ -720,7 +734,13 @@ export const TreeProvider = ({ children }: { children: ReactNode }) => {
       };
     });
     
-    toast.success(`Applied ${reward.name} to your tree!`);
+    // Show a visual notification based on the visual effect
+    const visualEffect = reward.effect?.visualEffect;
+    if (visualEffect) {
+      toast.success(`Applied ${reward.name} to your tree! The tree now has ${visualEffect}!`);
+    } else {
+      toast.success(`Applied ${reward.name} to your tree!`);
+    }
   };
 
   const applyTool = (tool: Tool) => {
@@ -733,10 +753,14 @@ export const TreeProvider = ({ children }: { children: ReactNode }) => {
       const newTree = { ...prev };
       
       // Apply the tool effects to tree stats
-      if (tool.effect?.height) newTree.height = Math.min(100, newTree.height + tool.effect.height);
+      if (tool.effect?.height) {
+        // Convert old % values to meters if needed
+        const heightIncrease = tool.effect.height > 5 ? tool.effect.height / 20 : tool.effect.height;
+        newTree.height = parseFloat((newTree.height + heightIncrease).toFixed(1));
+      }
+      
       if (tool.effect?.leaves) newTree.leaves = Math.min(100, newTree.leaves + tool.effect.leaves);
       if (tool.effect?.health) newTree.health = Math.min(100, newTree.health + tool.effect.health);
-      if (tool.effect?.beauty) newTree.beauty = Math.min(100, newTree.beauty + tool.effect.beauty);
       
       // Apply style changes based on tool
       if (tool.effect?.style) {
@@ -757,6 +781,7 @@ export const TreeProvider = ({ children }: { children: ReactNode }) => {
           case "birds":
           case "functions":
           case "recursive":
+          case "rainbow":
             newTree.styles.special.push(tool.effect.style);
             break;
         }
@@ -776,7 +801,14 @@ export const TreeProvider = ({ children }: { children: ReactNode }) => {
       t.id === tool.id ? { ...t, used: true } : t
     )));
     
-    toast.success(`Applied ${tool.name} to your tree!`);
+    // Visual effect notification
+    if (tool.effect?.style === "rainbow") {
+      toast.success(`Applied ${tool.name} to your tree! Your tree now has rainbow-colored leaves!`);
+    } else if (tool.effect?.visualEffect) {
+      toast.success(`Applied ${tool.name} to your tree! Added ${tool.effect.visualEffect} visual effect!`);
+    } else {
+      toast.success(`Applied ${tool.name} to your tree!`);
+    }
   };
 
   const resetTree = () => {
