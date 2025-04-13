@@ -39,14 +39,38 @@ serve(async (req) => {
     let userPrompt = prompt;
     
     // Set appropriate system prompts based on request type
+<<<<<<< HEAD
     if (type === "generate_project") {
       systemPrompt = "You are a project manager assistant. Break down PRD documents into concrete, actionable tasks and subtasks. Create practical, specific tasks needed to implement the described project.";
     } else if (type === "recommendations") {
       systemPrompt = "You are a productivity coach specialized in software development. Analyze the project and task information and provide specific, actionable recommendations to help complete the project efficiently.";
       userPrompt = `Based on the following project and tasks information, provide 3-5 specific recommendations: ${JSON.stringify(projectData)}\n\nUser query: ${prompt}`;
+=======
+    if (type === "generate_project" && projectData?.prd) {
+      systemPrompt = "You are a project manager assistant. Your task is to analyze PRD documents and break them down into concrete, actionable tasks and subtasks. Create practical, specific tasks that would be needed to implement the described project.";
+    } else if (type === "recommendations") {
+      systemPrompt = "You are a productivity coach specialized in software development. Analyze the project and task information provided and give specific, actionable recommendations to help complete the project efficiently.";
+      
+      // Construct detailed context including project details, tasks, and subtasks
+      let projectContext = "Project Details:\n";
+      if (projectData?.project) {
+        projectContext += `- Name: ${projectData.project.name}\n`;
+        projectContext += `- Description: ${projectData.project.description}\n`;
+        if (projectData.project.notes) projectContext += `- Notes: ${projectData.project.notes}\n`;
+      }
+      if (projectData?.tasks && projectData.tasks.length > 0) {
+        projectContext += "\nTasks:\n" + projectData.tasks.map((task: any) => `- ${task.name}: ${task.description}`).join('\n');
+      }
+      userPrompt = `Based on the following project information, provide 3-5 specific recommendations to help complete this project efficiently:\n\n${projectContext}\n\nUser query: ${prompt}`;
+>>>>>>> 21ce918 (Fix: [Describe the errors fixed])
     }
 
     console.log(`Making OpenAI request for type: ${type}`);
+
+    if (type === "generate_project" && projectData?.prd) {
+      // For project generation, send the PRD content as the user prompt
+      userPrompt = `Analyze the following PRD and generate a list of tasks and subtasks required to complete the project:\n\n${projectData.prd}`;
+    }
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",

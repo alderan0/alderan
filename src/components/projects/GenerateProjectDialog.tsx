@@ -34,10 +34,11 @@ export const GenerateProjectDialog = ({ open, onOpenChange }: GenerateProjectDia
     setIsLoading(true);
     
     try {
-      // Check if OPENAI_API_KEY is properly configured in Supabase
-      const enableAIFeatures = import.meta.env.VITE_ENABLE_AI_FEATURES;
-      if (enableAIFeatures !== 'true') {
-        throw new Error("AI features are not enabled for this project");
+      // Check if OPENAI_API_KEY is set in environment variables
+      if (!import.meta.env.VITE_SUPABASE_ANON_KEY) {
+        throw new Error(
+          "OPENAI_API_KEY is not configured. Please set it in your environment variables."
+        );
       }
       
       // Call the OpenAI edge function to process the PRD

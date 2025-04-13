@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
+
 const TasksPage = () => {
   const { currentMood, projects } = useTasks();
   const isMobile = useIsMobile();
@@ -106,6 +107,29 @@ const TasksPage = () => {
           </TabsContent>
         </Tabs>
       </div>
+      {/* Bottom Navigation for Mobile */}
+      {isMobile && (
+        <nav className="fixed bottom-0 left-0 z-10 w-full bg-background border-t border-border">
+          <div className="container mx-auto flex justify-around items-center h-16">
+            <Link to="/app/projects" className="flex flex-col items-center text-muted-foreground hover:text-primary">
+              <FolderKanban size={20} />
+              <span className="text-xs mt-1">Projects</span>
+            </Link>
+            <Link to="/app/tasks" className="flex flex-col items-center text-muted-foreground hover:text-primary">
+              <Calendar size={20} />
+              <span className="text-xs mt-1">Tasks</span>
+            </Link>
+            <Link to="/app/tree" className="flex flex-col items-center text-muted-foreground hover:text-primary">
+              <LineChart size={20} />
+              <span className="text-xs mt-1">Tree</span>
+            </Link>
+            <Link to="/app/community" className="flex flex-col items-center text-muted-foreground hover:text-primary">
+              <UsersIcon size={20} />
+              <span className="text-xs mt-1">Community</span>
+            </Link>
+          </div>
+        </nav>
+      )}
     </div>
   );
 };
