@@ -16,7 +16,14 @@ serve(async (req) => {
   try {
     const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
     if (!OPENAI_API_KEY) {
-      throw new Error("OPENAI_API_KEY is not set");
+      console.error("OPENAI_API_KEY is not set");
+      return new Response(
+        JSON.stringify({ error: "OpenAI API key is not configured" }),
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, "Content-Type": "application/json" } 
+        }
+      );
     }
 
     const { prompt, type, projectData } = await req.json();
@@ -33,10 +40,10 @@ serve(async (req) => {
     
     // Set appropriate system prompts based on request type
     if (type === "generate_project") {
-      systemPrompt = "You are a project manager assistant. Your task is to analyze PRD documents and break them down into concrete, actionable tasks and subtasks. Create practical, specific tasks that would be needed to implement the described project.";
+      systemPrompt = "You are a project manager assistant. Break down PRD documents into concrete, actionable tasks and subtasks. Create practical, specific tasks needed to implement the described project.";
     } else if (type === "recommendations") {
-      systemPrompt = "You are a productivity coach specialized in software development. Analyze the project and task information provided and give specific, actionable recommendations to help complete the project efficiently.";
-      userPrompt = `Based on the following project and tasks information, provide 3-5 specific recommendations to help complete this project efficiently: ${JSON.stringify(projectData)}\n\nUser query: ${prompt}`;
+      systemPrompt = "You are a productivity coach specialized in software development. Analyze the project and task information and provide specific, actionable recommendations to help complete the project efficiently.";
+      userPrompt = `Based on the following project and tasks information, provide 3-5 specific recommendations: ${JSON.stringify(projectData)}\n\nUser query: ${prompt}`;
     }
 
     console.log(`Making OpenAI request for type: ${type}`);
@@ -111,7 +118,6 @@ serve(async (req) => {
 
 // Helper function to parse AI response into tasks and subtasks
 function parseAIGeneratedTasks(aiResponse: string): any[] {
-  // This is a simple example - in production, you might need more robust parsing
   const tasks = [];
   
   // Split by numbered items or bullet points with regex
@@ -154,3 +160,4 @@ function parseAIGeneratedTasks(aiResponse: string): any[] {
   
   return tasks;
 }
+
