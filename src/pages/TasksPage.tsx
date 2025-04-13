@@ -5,7 +5,7 @@ import { AddTaskForm } from "@/components/tasks/AddTaskForm";
 import { MoodSelector } from "@/components/tasks/MoodSelector";
 import { HabitTracker } from "@/components/tasks/HabitTracker";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, LineChart, FolderKanban } from "lucide-react";
+import { Calendar, LineChart, FolderKanban, UsersIcon } from "lucide-react";
 import { useTasks } from "@/context/TaskContext";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { AIScheduleRecommendations } from "@/components/tasks/AIScheduleRecommendations";
