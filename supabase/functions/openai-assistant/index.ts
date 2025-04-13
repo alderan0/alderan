@@ -160,4 +160,3 @@ function parseAIGeneratedTasks(aiResponse: string): any[] {
   
   return tasks;
 }
-
