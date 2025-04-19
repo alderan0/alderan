@@ -1,106 +1,349 @@
 
-import { createContext, useState, useContext, useEffect, ReactNode } from "react";
-import { Tool } from "./TaskContext";
-import { toast } from "sonner";
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { v4 as uuidv4 } from 'uuid';
+import { toast } from 'sonner';
 
-export interface TreeState {
-  height: number; // 1-100
-  leaves: number; // 0-100
-  health: number; // 1-100
-  beauty: number; // 1-100
-  level: number; // 1-10
-  decorations: string[];
+// Define types
+interface TreeContextProps {
+  children: React.ReactNode;
+}
+
+export interface Tool {
+  id: string;
+  name: string;
+  type: string;
+  description?: string;
+  isActive: boolean;
+  used?: boolean;
+  effect?: {
+    height?: number;
+    leaves?: number;
+    health?: number;
+    special?: string;
+    style?: string;
+    visualEffect?: string;
+  };
+  minLevel?: number;
+}
+
+interface TreeState {
+  level: number;
+  levelStatus: string;
+  points: number;
+  height: number;
+  leaves: number;
+  health: number;
+  tasksCompleted: number;
+  visualEffects: {
+    leafColor?: string;
+    trunkColor?: string;
+    special?: string;
+  };
 }
 
 interface TreeContextType {
   tree: TreeState;
-  applyTool: (tool: Tool) => void;
-  resetTree: () => void;
+  tools: Tool[];
+  applyTool: (toolId: string) => void;
+  addPoints: (points: number) => void;
+  completeTask: () => void;
+  activeTools: Tool[];
+  availableTools: Tool[];
+  getTreeTier: () => "sapling" | "young" | "mature"; // Add this function type
+  setLastEffect: (effect: string | null) => void;
+  lastEffect: string | null;
+  treeHistory: TreeState[];
+  galleryIndex: number;
 }
 
+// Create context
 const TreeContext = createContext<TreeContextType | undefined>(undefined);
 
-const initialTreeState: TreeState = {
-  height: 10,
-  leaves: 5,
-  health: 50,
-  beauty: 30,
-  level: 1,
-  decorations: []
-};
-
-export const TreeProvider = ({ children }: { children: ReactNode }) => {
+// Provider component
+export const TreeProvider: React.FC<TreeContextProps> = ({ children }) => {
   const [tree, setTree] = useState<TreeState>(() => {
-    const saved = localStorage.getItem('tree');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        return initialTreeState;
+    const savedTree = localStorage.getItem('tree');
+    return savedTree ? JSON.parse(savedTree) : {
+      level: 1,
+      levelStatus: 'beginner',
+      points: 0,
+      height: 1.0,
+      leaves: 10,
+      health: 100,
+      tasksCompleted: 0,
+      visualEffects: {
+        leafColor: 'green',
+        trunkColor: 'brown',
       }
-    }
-    return initialTreeState;
+    };
   });
 
+  const [tools, setTools] = useState<Tool[]>(() => {
+    const savedTools = localStorage.getItem('tools');
+    return savedTools ? JSON.parse(savedTools) : [
+      {
+        id: uuidv4(),
+        name: 'Growth Promoter',
+        type: 'growth',
+        description: 'Increases tree height by 0.3m',
+        isActive: true,
+        effect: {
+          height: 0.3,
+          visualEffect: 'growTaller'
+        },
+        minLevel: 1
+      },
+      {
+        id: uuidv4(),
+        name: 'Leaf Booster',
+        type: 'growth',
+        description: 'Adds 5 leaves to your tree',
+        isActive: true,
+        effect: {
+          leaves: 5,
+          visualEffect: 'addLeaves'
+        },
+        minLevel: 1
+      },
+      {
+        id: uuidv4(),
+        name: 'Health Potion',
+        type: 'health',
+        description: 'Restores 10 health points',
+        isActive: true,
+        effect: {
+          health: 10,
+          visualEffect: 'healthGlow'
+        },
+        minLevel: 1
+      },
+      {
+        id: uuidv4(),
+        name: 'Rainbow Leaves',
+        type: 'decoration',
+        description: 'Gives your tree beautiful rainbow colored leaves',
+        isActive: false,
+        effect: {
+          special: 'rainbow',
+          visualEffect: 'rainbowLeaves'
+        },
+        minLevel: 3
+      },
+      {
+        id: uuidv4(),
+        name: 'Golden Trunk',
+        type: 'decoration',
+        description: 'Transforms your trunk into gold',
+        isActive: false,
+        effect: {
+          special: 'gold',
+          visualEffect: 'goldenTrunk'
+        },
+        minLevel: 5
+      },
+      {
+        id: uuidv4(),
+        name: 'Super Growth',
+        type: 'growth',
+        description: 'Increases tree height by 0.5m',
+        isActive: false,
+        effect: {
+          height: 0.5,
+          visualEffect: 'superGrow'
+        },
+        minLevel: 7
+      },
+      {
+        id: uuidv4(),
+        name: 'Magical Aura',
+        type: 'decoration',
+        description: 'Surrounds your tree with a magical aura',
+        isActive: false,
+        effect: {
+          special: 'aura',
+          visualEffect: 'magicAura'
+        },
+        minLevel: 10
+      }
+    ];
+  });
+
+  // Add state for tracking visual effects
+  const [lastEffect, setLastEffect] = useState<string | null>(null);
+  
+  // Add state for tree history and gallery viewing
+  const [treeHistory, setTreeHistory] = useState<TreeState[]>([]);
+  const [galleryIndex, setGalleryIndex] = useState<number>(-1);
+
+  // Save to localStorage whenever state changes
   useEffect(() => {
     localStorage.setItem('tree', JSON.stringify(tree));
-    
-    // Calculate level based on tree stats
-    const totalStats = tree.height + tree.leaves + tree.health + tree.beauty;
-    const newLevel = Math.min(10, Math.max(1, Math.floor(totalStats / 40) + 1));
-    
-    if (newLevel !== tree.level) {
-      setTree(prev => ({ ...prev, level: newLevel }));
-      if (newLevel > 1) {
-        toast.success(`Your tree grew to level ${newLevel}!`);
-      }
-    }
   }, [tree]);
 
-  const applyTool = (tool: Tool) => {
-    if (tool.used) {
-      toast.error("This tool has already been used");
-      return;
+  useEffect(() => {
+    localStorage.setItem('tools', JSON.stringify(tools));
+  }, [tools]);
+
+  // Calculate level status based on level
+  useEffect(() => {
+    let status = 'beginner';
+    if (tree.level >= 15) {
+      status = 'master';
+    } else if (tree.level >= 10) {
+      status = 'expert';
+    } else if (tree.level >= 5) {
+      status = 'intermediate';
     }
     
-    setTree(prev => {
-      const newTree = { ...prev };
+    if (status !== tree.levelStatus) {
+      setTree(prev => ({
+        ...prev,
+        levelStatus: status
+      }));
+    }
+  }, [tree.level]);
+
+  // Get tree tier based on tasks completed
+  const getTreeTier = (): "sapling" | "young" | "mature" => {
+    if (tree.tasksCompleted >= 150) return "mature";
+    if (tree.tasksCompleted >= 50) return "young";
+    return "sapling";
+  };
+
+  // Apply a tool to the tree
+  const applyTool = (toolId: string) => {
+    const tool = tools.find(t => t.id === toolId);
+    if (!tool) return;
+    
+    // Mark the tool as used
+    setTools(prevTools => prevTools.map(t => 
+      t.id === toolId ? { ...t, used: true } : t
+    ));
+    
+    // Apply the effects to the tree
+    if (tool.effect) {
+      let updatedTree = { ...tree };
+      let toastMessage = `Applied ${tool.name}`;
       
-      // Apply the tool effects to tree stats
-      if (tool.effect.height) newTree.height = Math.min(100, newTree.height + tool.effect.height);
-      if (tool.effect.leaves) newTree.leaves = Math.min(100, newTree.leaves + tool.effect.leaves);
-      if (tool.effect.health) newTree.health = Math.min(100, newTree.health + tool.effect.health);
-      if (tool.effect.beauty) newTree.beauty = Math.min(100, newTree.beauty + tool.effect.beauty);
-      
-      // Add decoration if it's a decoration tool
-      if (tool.type === "decorate") {
-        newTree.decorations = [...newTree.decorations, tool.name];
+      // Apply height change
+      if (typeof tool.effect.height === 'number') {
+        updatedTree.height += tool.effect.height;
+        toastMessage += `, height +${tool.effect.height}m`;
       }
       
-      return newTree;
-    });
-    
-    // Mark tool as used
-    tool.used = true;
-    localStorage.setItem('tools', JSON.stringify(JSON.parse(localStorage.getItem('tools') || '[]').map((t: Tool) => 
-      t.id === tool.id ? { ...t, used: true } : t
-    )));
-    
-    toast.success(`Applied ${tool.name} to your tree!`);
+      // Apply leaves change
+      if (typeof tool.effect.leaves === 'number') {
+        updatedTree.leaves += tool.effect.leaves;
+        toastMessage += `, leaves +${tool.effect.leaves}`;
+      }
+      
+      // Apply health change
+      if (typeof tool.effect.health === 'number') {
+        updatedTree.health = Math.min(100, updatedTree.health + tool.effect.health);
+        toastMessage += `, health +${tool.effect.health}`;
+      }
+      
+      // Apply special effects
+      if (tool.effect.special) {
+        let updatedVisualEffects = { ...updatedTree.visualEffects };
+        
+        switch (tool.effect.special) {
+          case 'rainbow':
+            updatedVisualEffects.leafColor = 'rainbow';
+            break;
+          case 'gold':
+            updatedVisualEffects.trunkColor = 'gold';
+            break;
+          case 'aura':
+            updatedVisualEffects.special = 'aura';
+            break;
+          default:
+            break;
+        }
+        
+        updatedTree.visualEffects = updatedVisualEffects;
+      }
+      
+      // Set last effect for animations
+      if (tool.effect.visualEffect) {
+        setLastEffect(tool.effect.visualEffect);
+      }
+      
+      setTree(updatedTree);
+      toast.success(toastMessage);
+      
+      // Add to tree history for gallery view
+      setTreeHistory(prev => [...prev, updatedTree]);
+    }
   };
 
-  const resetTree = () => {
-    setTree(initialTreeState);
-    toast.info("Tree has been reset");
+  // Add points to the tree
+  const addPoints = (points: number) => {
+    setTree(prev => {
+      const newPoints = prev.points + points;
+      
+      // Check if level up (every 100 * 1.4^(level-1) points)
+      const currentLevelThreshold = Math.floor(100 * Math.pow(1.4, prev.level - 1));
+      const nextLevelThreshold = Math.floor(100 * Math.pow(1.4, prev.level));
+      
+      if (newPoints >= nextLevelThreshold) {
+        toast.success(`Level Up! You are now level ${prev.level + 1}`);
+        return {
+          ...prev,
+          points: newPoints,
+          level: prev.level + 1
+        };
+      }
+      
+      return {
+        ...prev,
+        points: newPoints
+      };
+    });
   };
+
+  // Complete a task
+  const completeTask = () => {
+    // Add points
+    addPoints(10);
+    
+    // Increment tasks completed
+    setTree(prev => ({
+      ...prev,
+      tasksCompleted: prev.tasksCompleted + 1
+    }));
+  };
+
+  // Filter active tools
+  const activeTools = tools.filter(tool => tool.isActive && !tool.used);
+  
+  // Filter available tools based on level
+  const availableTools = tools.filter(tool => {
+    const minLevel = tool.minLevel || 1;
+    return tree.level >= minLevel;
+  });
 
   return (
-    <TreeContext.Provider value={{ tree, applyTool, resetTree }}>
+    <TreeContext.Provider value={{ 
+      tree, 
+      tools, 
+      applyTool, 
+      addPoints, 
+      completeTask,
+      activeTools,
+      availableTools,
+      getTreeTier,
+      lastEffect,
+      setLastEffect,
+      treeHistory,
+      galleryIndex
+    }}>
       {children}
     </TreeContext.Provider>
   );
 };
 
+// Custom hook for using the tree context
 export const useTree = () => {
   const context = useContext(TreeContext);
   if (context === undefined) {

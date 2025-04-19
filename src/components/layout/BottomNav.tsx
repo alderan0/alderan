@@ -1,71 +1,56 @@
-
 import { Link, useLocation } from "react-router-dom";
-import { Calendar, Users } from "lucide-react";
+import { Home, FolderKanban, Users, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+const NAV_ITEMS = [
+  {
+    label: "Tasks",
+    icon: Home,
+    href: "/app/tasks"
+  },
+  {
+    label: "Projects",
+    icon: FolderKanban,
+    href: "/app/projects"
+  },
+  {
+    label: "Community",
+    icon: Users,
+    href: "/app/community"
+  },
+  {
+    label: "Settings",
+    icon: Settings,
+    href: "/app/settings"
+  }
+];
 
 export const BottomNav = () => {
   const location = useLocation();
-  
+
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t shadow-lg">
-      <div className="container flex h-16 items-center justify-around">
-        <Link 
-          to="/" 
-          className={cn(
-            "flex flex-col items-center justify-center w-1/3 h-full",
-            location.pathname === '/' ? "text-primary" : "text-muted-foreground"
-          )}
-        >
-          <Calendar size={24} />
-          <span className="text-xs mt-1">Tasks</span>
-        </Link>
-        
-        <Link 
-          to="/tree" 
-          className={cn(
-            "flex flex-col items-center justify-center w-1/3 h-full",
-            location.pathname === '/tree' ? "text-alderan-green-light" : "text-muted-foreground"
-          )}
-        >
-          <TreeIcon size={24} />
-          <span className="text-xs mt-1">Tree</span>
-        </Link>
-        
-        <Link 
-          to="/community" 
-          className={cn(
-            "flex flex-col items-center justify-center w-1/3 h-full",
-            location.pathname === '/community' ? "text-alderan-blue" : "text-muted-foreground"
-          )}
-        >
-          <Users size={24} />
-          <span className="text-xs mt-1">Community</span>
-        </Link>
+    <nav className="fixed bottom-0 left-0 right-0 bg-background border-t">
+      <div className="flex justify-around items-center h-16">
+        {NAV_ITEMS.map(item => {
+          const isActive = location.pathname === item.href;
+          const Icon = item.icon;
+
+          return (
+            <Link
+              key={item.href}
+              to={item.href}
+              className={cn(
+                "flex flex-col items-center justify-center w-full h-full",
+                "text-muted-foreground hover:text-foreground transition-colors",
+                isActive && "text-primary"
+              )}
+            >
+              <Icon className="h-5 w-5" />
+              <span className="text-xs mt-1">{item.label}</span>
+            </Link>
+          );
+        })}
       </div>
     </nav>
-  );
-};
-
-// Custom tree icon component
-const TreeIcon = ({ size = 24, className }: { size?: number, className?: string }) => {
-  return (
-    <svg 
-      xmlns="http://www.w3.org/2000/svg" 
-      width={size} 
-      height={size} 
-      viewBox="0 0 24 24" 
-      fill="none" 
-      stroke="currentColor" 
-      strokeWidth="2" 
-      strokeLinecap="round" 
-      strokeLinejoin="round" 
-      className={className}
-    >
-      <path d="M12 22v-7l-2-2" />
-      <path d="M17 8v0a5 5 0 0 0-5-5v0a5 5 0 0 0-5 5v0" />
-      <path d="M17 8H7" />
-      <path d="M12 8v6" />
-      <path d="M7 8a5 5 0 0 0 5 5 5 5 0 0 0 5-5" />
-    </svg>
   );
 };
