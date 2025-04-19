@@ -1,65 +1,27 @@
-
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import { Layout } from "@/components/layout/Layout";
-import { AuthProvider } from "@/context/AuthContext";
-import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
-import TasksPage from "@/pages/TasksPage";
-import TreePage from "@/pages/TreePage";
-import ProjectsPage from "@/pages/ProjectsPage";
-import CommunityPage from "@/pages/CommunityPage";
-import AuthPage from "@/pages/auth/AuthPage";
-import LandingPage from "@/pages/LandingPage";
 import { Toaster } from "@/components/ui/toaster";
-import { TaskProvider } from "@/context/TaskContext";
-import { TreeProvider } from "@/context/TreeContext";
-import { useEffect } from "react";
-import { loadSampleData } from "@/utils/sampleData";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Index from "./pages/Index";
+import NotFound from "./pages/NotFound";
 
-function App() {
-  useEffect(() => {
-    // Load sample data when the app starts
-    loadSampleData();
-  }, []);
-  
-  return (
-    <Router>
-      <AuthProvider>
+const queryClient = new QueryClient();
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
         <Routes>
-          {/* Public routes */}
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/auth" element={<AuthPage />} />
-
-          {/* Protected routes */}
-          <Route
-            path="/app"
-            element={
-              <ProtectedRoute>
-                <TreeProvider>
-                  <TaskProvider>
-                    <Layout />
-                  </TaskProvider>
-                </TreeProvider>
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<Navigate to="/app/tasks" replace />} />
-            <Route path="tasks" element={<TasksPage />} />
-            <Route path="projects" element={<ProjectsPage />} />
-            <Route path="tree" element={<TreePage />} />
-            <Route path="community" element={<CommunityPage />} />
-            <Route path="settings" element={<div className="p-8">
-              <h1 className="text-2xl font-bold">Settings</h1>
-              <p className="text-muted-foreground mt-2">App settings will appear here.</p>
-            </div>} />
-          </Route>
-
-          {/* Catch all */}
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="/" element={<Index />} />
+          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="*" element={<NotFound />} />
         </Routes>
-        <Toaster />
-      </AuthProvider>
-    </Router>
-  );
-}
+      </BrowserRouter>
+    </TooltipProvider>
+  </QueryClientProvider>
+);
 
 export default App;

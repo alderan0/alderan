@@ -1,73 +1,113 @@
 
-import React from 'react';
-import { useTree } from '@/context/TreeContext';
-
-interface Decoration {
-  id: string;
-  type: string;
-  name: string;
-  active: boolean;
-}
+import { useTree } from "@/context/TreeContext";
 
 export const VirtualTree = () => {
-  // Use the properties from tree context
-  const { tree, treeHistory, galleryIndex } = useTree();
+  const { tree } = useTree();
   
-  // Use current tree or selected tree from gallery if available
-  const currentTree = galleryIndex >= 0 && galleryIndex < treeHistory.length 
-    ? treeHistory[galleryIndex] 
-    : tree;
-  
-  // Get background style based on tree level
-  const getBackgroundStyle = () => {
-    if (currentTree.level < 5) return 'bg-gradient-to-b from-blue-100 to-blue-200';
-    if (currentTree.level < 10) return 'bg-gradient-to-b from-green-100 to-blue-100';
-    if (currentTree.level < 15) return 'bg-gradient-to-b from-amber-100 to-green-100';
-    return 'bg-gradient-to-b from-purple-100 to-amber-100';
-  };
-  
-  // Get tree style based on level and points
-  const getTreeStyle = () => {
-    let baseHeight = 120 + (currentTree.height || 0);
-    let baseWidth = 80 + (currentTree.level * 5);
-    
-    return {
-      height: `${baseHeight}px`,
-      width: `${baseWidth}px`
-    };
-  };
-
-  // Check if decoration is active
-  const isDecorationActive = (decoration: Decoration) => {
-    if (!decoration) return false;
-    // Simplified since rewards property doesn't exist in our current TreeState
-    return false;
-  };
+  // Calculate sizes and colors based on tree state
+  const treeHeight = 200 + (tree.height * 2); // Base height + growth
+  const trunkWidth = 20 + Math.floor(tree.height / 10); // Trunk gets thicker as tree grows
+  const canopySize = 100 + (tree.leaves * 1.5); // Tree canopy grows with leaves
+  const leafColor = `hsl(${100 + (tree.health / 2)}, ${60 + (tree.health / 3)}%, ${40 + (tree.health / 5)}%)`; // Healthier = more vibrant green
   
   return (
-    <div className={`w-full h-72 rounded-lg relative overflow-hidden ${getBackgroundStyle()}`}>
-      <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2">
+    <div className="flex flex-col items-center justify-center py-8">
+      <div className="relative" style={{ height: `${treeHeight}px`, width: `${canopySize}px` }}>
         {/* Tree trunk */}
-        <div 
-          className="bg-gradient-to-t from-amber-800 to-amber-700 rounded-t-lg mx-auto" 
-          style={{ width: '20px', height: `${40 + currentTree.level * 2}px` }}
+        <div
+          className="absolute left-1/2 transform -translate-x-1/2 bg-alderan-green-dark animate-tree-grow"
+          style={{
+            height: `${treeHeight * 0.7}px`,
+            width: `${trunkWidth}px`,
+            bottom: 0,
+            borderRadius: `${trunkWidth / 2}px ${trunkWidth / 2}px 0 0`,
+          }}
         />
         
-        {/* Tree foliage */}
-        <div 
-          className="bg-gradient-to-t from-green-600 to-green-500 rounded-full mx-auto -mt-8"
-          style={getTreeStyle()}
-        >
-          {/* Tree decorations would go here */}
+        {/* Tree canopy - multiple layers for fullness */}
+        {Array.from({ length: Math.max(1, Math.floor(tree.leaves / 10)) }).map((_, index) => (
+          <div
+            key={index}
+            className="absolute left-1/2 transform -translate-x-1/2 rounded-full animate-leaf-appear"
+            style={{
+              backgroundColor: leafColor,
+              height: `${canopySize - (index * 20)}px`,
+              width: `${canopySize - (index * 15)}px`,
+              bottom: `${(treeHeight * 0.4) + (index * 25)}px`,
+              opacity: 0.85 - (index * 0.1),
+              animationDelay: `${index * 0.15}s`,
+            }}
+          />
+        ))}
+        
+        {/* Decorations */}
+        {tree.decorations.map((decoration, index) => (
+          <div
+            key={index}
+            className="absolute rounded-full animate-float"
+            style={{
+              height: "15px",
+              width: "15px",
+              backgroundColor: decoration.includes("Lights") ? "#FFD700" : "#FF69B4",
+              left: `${20 + (Math.random() * 60)}%`,
+              top: `${20 + (Math.random() * 60)}%`,
+              animationDelay: `${index * 0.3}s`
+            }}
+          />
+        ))}
+        
+        {/* Level indicator */}
+        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-8 bg-alderan-blue text-white px-3 py-1 rounded-full text-sm font-medium">
+          Level {tree.level}
+        </div>
+      </div>
+      
+      {/* Tree stats */}
+      <div className="mt-12 grid grid-cols-2 gap-4 max-w-xs">
+        <div className="bg-muted rounded-lg p-3">
+          <div className="text-xs text-muted-foreground">Height</div>
+          <div className="mt-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-alderan-green-dark"
+              style={{ width: `${tree.height}%` }}
+            />
+          </div>
+          <div className="text-right text-xs mt-1">{tree.height}%</div>
         </div>
         
-        {/* Tree level indicator */}
-        <div className="absolute bottom-2 right-2 bg-white/80 px-2 py-1 rounded-full text-xs font-medium">
-          Level {currentTree.level}
+        <div className="bg-muted rounded-lg p-3">
+          <div className="text-xs text-muted-foreground">Leaves</div>
+          <div className="mt-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-alderan-leaf"
+              style={{ width: `${tree.leaves}%` }}
+            />
+          </div>
+          <div className="text-right text-xs mt-1">{tree.leaves}%</div>
+        </div>
+        
+        <div className="bg-muted rounded-lg p-3">
+          <div className="text-xs text-muted-foreground">Health</div>
+          <div className="mt-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-green-500"
+              style={{ width: `${tree.health}%` }}
+            />
+          </div>
+          <div className="text-right text-xs mt-1">{tree.health}%</div>
+        </div>
+        
+        <div className="bg-muted rounded-lg p-3">
+          <div className="text-xs text-muted-foreground">Beauty</div>
+          <div className="mt-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-purple-500"
+              style={{ width: `${tree.beauty}%` }}
+            />
+          </div>
+          <div className="text-right text-xs mt-1">{tree.beauty}%</div>
         </div>
       </div>
     </div>
   );
 };
-
-export default VirtualTree;
